@@ -12,7 +12,8 @@ import { attachWebSocket } from './websocket.js';
 const DEFAULT_PORT = 3000;
 
 function resolvePort(): number {
-  const raw = process.env['GATEWAY_PORT'];
+  // Railway/Fly inject PORT; local dev uses GATEWAY_PORT; fall back to 3000.
+  const raw = process.env['PORT'] ?? process.env['GATEWAY_PORT'];
   const n = raw ? Number.parseInt(raw, 10) : DEFAULT_PORT;
   return Number.isFinite(n) && n > 0 ? n : DEFAULT_PORT;
 }
