@@ -1,0 +1,12 @@
+apiVersion: v2
+name: bigballsports
+description: Big Ball Sports unified data API — gateway + orchestrator + MCP fleet.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - sports
+  - api
+  - gateway
+maintainers:
+  - name: Big Ball Sports Platform Team

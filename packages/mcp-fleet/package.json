@@ -1,0 +1,28 @@
+{
+  "name": "@bbs/mcp-fleet",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP scraper dispatch layer \u2014 covers gaps the free-tier APIs cannot fill.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "bin": {
+    "bbs-mcp": "./src/main.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "dev": "tsx watch --env-file=../../.env src/main.ts",
+    "start": "tsx --env-file=../../.env src/main.ts",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@bbs/shared": "workspace:*",
+    "cheerio": "^1.0.0",
+    "fastify": "^4.28.1",
+    "ioredis": "^5.4.1"
+  },
+  "devDependencies": {
+    "ioredis-mock": "^8.9.0",
+    "msw": "^2.6.6"
+  }
+}

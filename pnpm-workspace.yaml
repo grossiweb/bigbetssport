@@ -1,0 +1,9 @@
+packages:
+  - 'packages/shared'
+  - 'packages/orchestrator'
+  - 'packages/normaliser'
+  - 'packages/gateway'
+  - 'packages/mcp-fleet'
+  - 'packages/live-window'
+  - 'packages/sdk'
+  - 'packages/platform'

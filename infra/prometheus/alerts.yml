@@ -1,0 +1,55 @@
+# Prometheus alert rules for Big Ball Sports.
+# Loaded by prometheus.yml via `rule_files:`.
+groups:
+  - name: bbs-quota
+    rules:
+      - alert: QuotaLow
+        expr: bbs_quota_remaining / ignoring(bucket) bbs_quota_remaining > 0 and bbs_quota_remaining < (bbs_quota_remaining + bbs_quota_used_total) * 0.10
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Quota <10% remaining on {{ $labels.source_id }}"
+          description: "Source {{ $labels.source_id }} bucket {{ $labels.bucket }} has fewer than 10% of tokens remaining."
+
+      - alert: QuotaExhausted
+        expr: bbs_quota_remaining == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Quota EXHAUSTED on {{ $labels.source_id }}"
+          description: "Source {{ $labels.source_id }} bucket {{ $labels.bucket }} has zero quota. Failover should have engaged."
+
+  - name: bbs-circuit
+    rules:
+      - alert: CircuitOpen
+        expr: bbs_circuit_state == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Circuit breaker OPEN on {{ $labels.source_id }} for >5m"
+          description: "Source {{ $labels.source_id }} has had its circuit breaker open for over 5 minutes — investigate upstream health."
+
+  - name: bbs-gaps
+    rules:
+      - alert: HighGapRate
+        expr: rate(bbs_gap_detected_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Gap event rate > 0.1/s ({{ $labels.field }}/{{ $labels.sport }})"
+          description: "Field router is hitting the MCP fallback more than once every 10 seconds. Either an upstream is degraded or coverage is missing."
+
+  - name: bbs-latency
+    rules:
+      - alert: SlowFieldFetch
+        expr: histogram_quantile(0.99, sum by (le, source_id, field) (rate(bbs_field_fetch_duration_ms_bucket[5m]))) > 2000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p99 field fetch >2s on {{ $labels.source_id }}/{{ $labels.field }}"
+          description: "The 99th-percentile latency for this source+field exceeds 2 seconds over the last 5 minutes."

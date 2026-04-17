@@ -1,0 +1,42 @@
+{
+  "name": "@bbs/gateway",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Public REST / GraphQL / WebSocket gateway.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "bin": {
+    "bbs-gateway": "./src/main.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "dev": "tsx watch --env-file=../../.env src/main.ts",
+    "start": "tsx --env-file=../../.env src/main.ts",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@bbs/mcp-fleet": "workspace:*",
+    "@bbs/orchestrator": "workspace:*",
+    "@bbs/shared": "workspace:*",
+    "@fastify/compress": "^7.0.3",
+    "@fastify/cors": "^9.0.1",
+    "@fastify/helmet": "^11.1.1",
+    "@fastify/swagger": "^8.15.0",
+    "@fastify/swagger-ui": "^3.0.0",
+    "bullmq": "^5.28.1",
+    "fastify": "^4.28.1",
+    "fastify-plugin": "^4.5.1",
+    "graphql": "^16.9.0",
+    "graphql-yoga": "^5.10.3",
+    "ioredis": "^5.4.1",
+    "pg": "^8.13.1",
+    "prom-client": "^15.1.3",
+    "socket.io": "^4.8.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.10",
+    "ioredis-mock": "^8.9.0"
+  }
+}

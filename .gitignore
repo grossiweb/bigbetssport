@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+.next/
+.turbo/
+out/
+.vercel/
+
+# Test / coverage
+coverage/
+.vitest/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Docker volumes (if bind-mounted)
+infra/postgres/data/
+infra/redis/data/
+infra/prometheus/data/
+infra/grafana/data/
+
+# Runtime
+*.pid
+*.seed
+*.pid.lock

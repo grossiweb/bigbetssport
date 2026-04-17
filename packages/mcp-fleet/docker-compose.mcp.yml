@@ -1,0 +1,142 @@
+# MCP fleet — 10 scraper services, one per port.
+# Shares the `bbs-network` from infra/docker-compose.yml. Bring this up
+# alongside the main stack with:
+#   docker compose -f infra/docker-compose.yml -f packages/mcp-fleet/docker-compose.mcp.yml up -d
+#
+# Each service runs the same image and reads SCRAPER_ID from env to pick
+# which scraper to host. The build context is the monorepo root so the
+# image can pull in the shared workspace packages at build time.
+
+name: bbs-mcp
+
+x-mcp-defaults: &mcp-defaults
+  build:
+    context: ../..
+    dockerfile: packages/mcp-fleet/Dockerfile
+  restart: unless-stopped
+  environment:
+    NODE_ENV: production
+    LOG_LEVEL: info
+    REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+  networks:
+    - bbs-network
+  depends_on:
+    - redis
+
+services:
+  mcp-fbref:
+    <<: *mcp-defaults
+    container_name: bbs-mcp-fbref
+    environment:
+      SCRAPER_ID: mcp-fbref
+      NODE_ENV: production
+      LOG_LEVEL: info
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    ports:
+      - '3101:3101'
+
+  mcp-sofascore:
+    <<: *mcp-defaults
+    container_name: bbs-mcp-sofascore
+    environment:
+      SCRAPER_ID: mcp-sofascore
+      NODE_ENV: production
+      LOG_LEVEL: info
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    ports:
+      - '3102:3102'
+
+  mcp-transfermarkt:
+    <<: *mcp-defaults
+    container_name: bbs-mcp-transfermarkt
+    environment:
+      SCRAPER_ID: mcp-transfermarkt
+      NODE_ENV: production
+      LOG_LEVEL: info
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    ports:
+      - '3103:3103'
+
+  mcp-rotowire:
+    <<: *mcp-defaults
+    container_name: bbs-mcp-rotowire
+    environment:
+      SCRAPER_ID: mcp-rotowire
+      NODE_ENV: production
+      LOG_LEVEL: info
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    ports:
+      - '3104:3104'
+
+  mcp-espn-full:
+    <<: *mcp-defaults
+    container_name: bbs-mcp-espn-full
+    environment:
+      SCRAPER_ID: mcp-espn-full
+      NODE_ENV: production
+      LOG_LEVEL: info
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    ports:
+      - '3105:3105'
+
+  mcp-cricinfo:
+    <<: *mcp-defaults
+    container_name: bbs-mcp-cricinfo
+    environment:
+      SCRAPER_ID: mcp-cricinfo
+      NODE_ENV: production
+      LOG_LEVEL: info
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    ports:
+      - '3106:3106'
+
+  mcp-cricbuzz:
+    <<: *mcp-defaults
+    container_name: bbs-mcp-cricbuzz
+    environment:
+      SCRAPER_ID: mcp-cricbuzz
+      NODE_ENV: production
+      LOG_LEVEL: info
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    ports:
+      - '3107:3107'
+
+  mcp-ufc-stats:
+    <<: *mcp-defaults
+    container_name: bbs-mcp-ufc-stats
+    environment:
+      SCRAPER_ID: mcp-ufc-stats
+      NODE_ENV: production
+      LOG_LEVEL: info
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    ports:
+      - '3108:3108'
+
+  mcp-tapology:
+    <<: *mcp-defaults
+    container_name: bbs-mcp-tapology
+    environment:
+      SCRAPER_ID: mcp-tapology
+      NODE_ENV: production
+      LOG_LEVEL: info
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    ports:
+      - '3109:3109'
+
+  mcp-boxrec:
+    <<: *mcp-defaults
+    container_name: bbs-mcp-boxrec
+    environment:
+      SCRAPER_ID: mcp-boxrec
+      NODE_ENV: production
+      LOG_LEVEL: info
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      BOXREC_USERNAME: ${BOXREC_USERNAME:-}
+      BOXREC_PASSWORD: ${BOXREC_PASSWORD:-}
+    ports:
+      - '3110:3110'
+
+networks:
+  bbs-network:
+    external: true
+    name: bbs_bbs-network

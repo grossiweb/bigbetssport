@@ -1,0 +1,127 @@
+name: bbs
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    container_name: bbs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bbs
+      POSTGRES_USER: bbs
+      POSTGRES_PASSWORD: bbs
+      TIMESCALEDB_TELEMETRY: 'off'
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U bbs -d bbs']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - bbs-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: bbs-redis
+    restart: unless-stopped
+    command: ['redis-server', '/usr/local/etc/redis/redis.conf']
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - bbs-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bbs-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    networks:
+      - bbs-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: bbs-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+    ports:
+      - '3001:3000'
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - bbs-network
+
+  platform:
+    build:
+      context: ..
+      dockerfile: packages/platform/Dockerfile
+    container_name: bbs-platform
+    restart: unless-stopped
+    profiles: ['platform']
+    environment:
+      NODE_ENV: production
+      PLATFORM_DATABASE_URL: postgres://bbs:bbs@postgres:5432/bbs
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3001}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+    ports:
+      - '3001:3001'
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - bbs-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: bbs-pgadmin
+    restart: unless-stopped
+    profiles: ['dev']
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@bigballsports.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - '5050:80'
+    depends_on:
+      - postgres
+    networks:
+      - bbs-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  bbs-network:
+    driver: bridge

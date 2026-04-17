@@ -1,0 +1,40 @@
+{
+  "name": "@bbs/platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Big Ball Sports developer platform \u2014 dashboard, docs, status page.",
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "tsc --noEmit -p tsconfig.json",
+    "build:next": "next build",
+    "start": "next start -p 3001",
+    "migrate": "tsx --env-file=../../.env scripts/migrate.ts",
+    "test": "vitest run --passWithNoTests",
+    "lint": "node -e \"console.log('platform uses next lint separately; skipped from pnpm -r lint')\""
+  },
+  "dependencies": {
+    "@bbs/orchestrator": "workspace:*",
+    "@bbs/shared": "workspace:*",
+    "@bigballsports/sdk": "workspace:*",
+    "bcryptjs": "^2.4.3",
+    "clsx": "^2.1.1",
+    "next": "14.2.15",
+    "next-auth": "5.0.0-beta.25",
+    "pg": "^8.13.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "resend": "^4.0.1",
+    "stripe": "^17.5.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/pg": "^8.11.10",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "pg-mem": "^3.0.2"
+  }
+}

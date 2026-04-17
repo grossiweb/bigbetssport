@@ -1,0 +1,95 @@
+# Big Ball Sports — Helm values.
+# Override per environment with `-f values-prod.yaml` etc.
+
+# ---- Image registry ------------------------------------------------------
+image:
+  registry: ghcr.io
+  repository: bigballsports
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# ---- Per-service replica counts -----------------------------------------
+gateway:
+  replicaCount: 3
+  resources:
+    limits:   { cpu: 1, memory: 512Mi }
+    requests: { cpu: 100m, memory: 128Mi }
+  env:
+    GATEWAY_PORT: "3000"
+    LOG_LEVEL: info
+
+orchestrator:
+  replicaCount: 2
+  resources:
+    limits:   { cpu: 1, memory: 512Mi }
+    requests: { cpu: 100m, memory: 128Mi }
+  env:
+    ORCHESTRATOR_PORT: "3006"
+    LOG_LEVEL: info
+
+mcpFleet:
+  # Each entry becomes its own Deployment with SCRAPER_ID set.
+  scrapers:
+    - { id: mcp-fbref,        port: 3101 }
+    - { id: mcp-sofascore,    port: 3102 }
+    - { id: mcp-transfermarkt, port: 3103 }
+    - { id: mcp-rotowire,     port: 3104 }
+    - { id: mcp-espn-full,    port: 3105 }
+    - { id: mcp-cricinfo,     port: 3106 }
+    - { id: mcp-cricbuzz,     port: 3107 }
+    - { id: mcp-ufc-stats,    port: 3108 }
+    - { id: mcp-tapology,     port: 3109 }
+    - { id: mcp-boxrec,       port: 3110 }
+  resources:
+    limits:   { cpu: 500m, memory: 256Mi }
+    requests: { cpu: 50m,  memory: 64Mi }
+
+# ---- External-infrastructure toggles ------------------------------------
+# Set both to `false` in production; point at managed services via env.
+redis:
+  enabled: false
+  # When disabled, these are read as plain env vars by the services.
+  externalUrl: redis://redis.production.internal:6379
+
+postgres:
+  enabled: false
+  externalUrl: postgres://bbs:bbs@rds.production.internal:5432/bbs
+
+# ---- Ingress ------------------------------------------------------------
+ingress:
+  enabled: true
+  className: nginx
+  hostname: api.bigballsports.com
+  tls:
+    enabled: true
+    secretName: bbs-api-tls
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: 1m
+
+# ---- Secrets (referenced from env; NOT stored in this file) -------------
+# All values mounted from `bbs-secrets` Kubernetes Secret.
+secretName: bbs-secrets
+requiredSecretKeys:
+  - API_KEY_HASH_SALT
+  - ADMIN_KEY
+  - DATABASE_URL
+  - REDIS_URL
+  - RUNDOWN_API_KEY
+  - FOOTBALL_DATA_KEY
+  - API_SPORTS_KEY
+  - SPORTMONKS_API_KEY
+  - THESPORTSDB_API_KEY
+  - PANDASCORE_API_KEY
+  - HIGHLIGHTLY_API_KEY
+  - CRICKETDATA_API_KEY
+  - BOXREC_USERNAME
+  - BOXREC_PASSWORD
+
+# ---- Autoscaling --------------------------------------------------------
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80

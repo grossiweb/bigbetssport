@@ -1,0 +1,29 @@
+{
+  "name": "@bbs/orchestrator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Source selection, quota tracking, and circuit-breaker logic.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "bin": {
+    "bbs-orchestrator": "./src/main.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "dev": "tsx watch --env-file=../../.env src/main.ts",
+    "start": "tsx --env-file=../../.env src/main.ts",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@bbs/shared": "workspace:*",
+    "bullmq": "^5.28.1",
+    "fastify": "^4.28.1",
+    "ioredis": "^5.4.1",
+    "prom-client": "^15.1.3"
+  },
+  "devDependencies": {
+    "ioredis-mock": "^8.9.0",
+    "msw": "^2.6.6"
+  }
+}

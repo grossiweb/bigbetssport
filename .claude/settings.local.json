@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --version)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm -r build)",
+      "Bash(pnpm -r lint)",
+      "Bash(pnpm -r test)",
+      "Bash(docker --version)",
+      "Bash(docker compose *)",
+      "Read(//c/Program Files/Docker/Docker/resources/bin/**)",
+      "Read(//c/ProgramData/DockerDesktop/version-bin/**)",
+      "Bash(command -v docker)"
+    ]
+  }
+}

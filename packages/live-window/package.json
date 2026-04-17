@@ -1,0 +1,21 @@
+{
+  "name": "@bbs/live-window",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Live-match fan-out, delta computation, and pub-sub bridge.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@bbs/shared": "workspace:*",
+    "ioredis": "^5.4.1"
+  },
+  "devDependencies": {
+    "ioredis-mock": "^8.9.0",
+    "msw": "^2.6.6"
+  }
+}

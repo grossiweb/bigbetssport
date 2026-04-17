@@ -1,0 +1,182 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '9.12.3'
+
+jobs:
+  # --- Lint + format --------------------------------------------------------
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r lint
+      - run: pnpm format:check
+
+  # --- Typecheck ------------------------------------------------------------
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r build
+
+  # --- Unit + integration tests --------------------------------------------
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg16
+        env:
+          POSTGRES_DB: bbs
+          POSTGRES_USER: bbs
+          POSTGRES_PASSWORD: bbs
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U bbs -d bbs"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Apply SQL migrations
+        env:
+          PGPASSWORD: bbs
+        run: |
+          for f in infra/postgres/migrations/*.sql; do
+            echo "applying $f"
+            psql -h localhost -U bbs -d bbs -f "$f"
+          done
+      - name: Run tests with coverage
+        env:
+          REDIS_URL: redis://localhost:6379
+          DATABASE_URL: postgres://bbs:bbs@localhost:5432/bbs
+        run: pnpm -r test -- --coverage
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  # --- Build + (on main) push images to GHCR --------------------------------
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r build
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        if: github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build + push gateway image
+        if: github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/gateway/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/gateway:latest
+            ghcr.io/${{ github.repository }}/gateway:${{ github.sha }}
+      - name: Build + push orchestrator image
+        if: github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/orchestrator/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/orchestrator:latest
+            ghcr.io/${{ github.repository }}/orchestrator:${{ github.sha }}
+      - name: Build + push mcp-fleet image
+        if: github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/mcp-fleet/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/mcp-fleet:latest
+            ghcr.io/${{ github.repository }}/mcp-fleet:${{ github.sha }}
+
+  # --- Dependency audit -----------------------------------------------------
+  security:
+    name: security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: pnpm audit
+        run: pnpm audit --prod --audit-level=high || true
+      - name: Snyk scan
+        if: env.SNYK_TOKEN != ''
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        uses: snyk/actions/node@master
+        with:
+          args: --severity-threshold=high

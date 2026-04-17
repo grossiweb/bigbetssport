@@ -1,0 +1,24 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: bbs-local
+
+scrape_configs:
+  - job_name: 'gateway'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:3000']
+        labels:
+          service: gateway
+
+  - job_name: 'orchestrator'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:3006']
+        labels:
+          service: orchestrator
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

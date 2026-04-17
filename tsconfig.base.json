@@ -1,0 +1,50 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+
+    "noEmit": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@bbs/shared": ["packages/shared/src/index.ts"],
+      "@bbs/shared/*": ["packages/shared/src/*"],
+      "@bbs/orchestrator": ["packages/orchestrator/src/index.ts"],
+      "@bbs/orchestrator/*": ["packages/orchestrator/src/*"],
+      "@bbs/normaliser": ["packages/normaliser/src/index.ts"],
+      "@bbs/normaliser/*": ["packages/normaliser/src/*"],
+      "@bbs/gateway": ["packages/gateway/src/index.ts"],
+      "@bbs/gateway/*": ["packages/gateway/src/*"],
+      "@bbs/mcp-fleet": ["packages/mcp-fleet/src/index.ts"],
+      "@bbs/mcp-fleet/*": ["packages/mcp-fleet/src/*"],
+      "@bbs/live-window": ["packages/live-window/src/index.ts"],
+      "@bbs/live-window/*": ["packages/live-window/src/*"]
+    }
+  },
+  "exclude": ["**/node_modules", "**/dist", "**/build", "**/coverage"]
+}

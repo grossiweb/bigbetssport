@@ -1,0 +1,12 @@
+export { default as theRundownAdapter } from './therundown.js';
+export { default as apiSportsAdapter } from './api-sports.js';
+export { default as theSportsDbAdapter } from './thesportsdb.js';
+export { default as ballDontLieAdapter } from './balldontlie.js';
+export { default as sportmonksAdapter } from './sportmonks.js';
+export { default as footballDataAdapter } from './football-data.js';
+export { default as highlightlyAdapter } from './highlightly.js';
+export { default as isportsAdapter } from './isports.js';
+export { default as sportsrcAdapter } from './sportsrc.js';
+export { default as pandaScoreAdapter } from './pandascore.js';
+export { default as cricketDataAdapter } from './cricketdata.js';
+export { default as mmaApiAdapter } from './mmaapi.js';

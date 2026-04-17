@@ -1,0 +1,22 @@
+{
+  "name": "@bbs/normaliser",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Entity resolution and canonical data shaping.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@bbs/shared": "workspace:*",
+    "fastest-levenshtein": "^1.0.16",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.10",
+    "pg-mem": "^3.0.2"
+  }
+}

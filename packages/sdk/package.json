@@ -1,0 +1,39 @@
+{
+  "name": "@bigballsports/sdk",
+  "version": "0.1.0",
+  "description": "Official TypeScript SDK for the Big Ball Sports API.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint src"
+  },
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "bigballsports",
+    "sports-api",
+    "sdk",
+    "football",
+    "nba",
+    "nfl",
+    "nhl",
+    "mlb",
+    "cricket",
+    "ufc"
+  ],
+  "license": "UNLICENSED",
+  "dependencies": {},
+  "devDependencies": {}
+}
