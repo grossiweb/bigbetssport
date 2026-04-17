@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
@@ -8,7 +8,7 @@ import { AuthShell } from '@/components/auth/AuthShell';
 import { Button } from '@/components/Button';
 import { Callout } from '@/components/Callout';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get('callbackUrl') ?? '/dashboard';
@@ -45,6 +45,39 @@ export default function LoginPage() {
   }
 
   return (
+    <form onSubmit={submit} className="space-y-4">
+      <div>
+        <label className="text-xs font-medium uppercase tracking-wide text-navy-500">Email</label>
+        <input
+          type="email"
+          autoComplete="email"
+          required
+          className="mt-1 w-full rounded-lg border border-navy-200 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </div>
+      <div>
+        <label className="text-xs font-medium uppercase tracking-wide text-navy-500">Password</label>
+        <input
+          type="password"
+          autoComplete="current-password"
+          required
+          className="mt-1 w-full rounded-lg border border-navy-200 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+      </div>
+      {error && <Callout type="danger">{error}</Callout>}
+      <Button type="submit" className="w-full" disabled={busy}>
+        {busy ? 'Signing in…' : 'Sign in'}
+      </Button>
+    </form>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <AuthShell
       title="Sign in"
       subtitle="Welcome back."
@@ -57,34 +90,9 @@ export default function LoginPage() {
         </>
       }
     >
-      <form onSubmit={submit} className="space-y-4">
-        <div>
-          <label className="text-xs font-medium uppercase tracking-wide text-navy-500">Email</label>
-          <input
-            type="email"
-            autoComplete="email"
-            required
-            className="mt-1 w-full rounded-lg border border-navy-200 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="text-xs font-medium uppercase tracking-wide text-navy-500">Password</label>
-          <input
-            type="password"
-            autoComplete="current-password"
-            required
-            className="mt-1 w-full rounded-lg border border-navy-200 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        {error && <Callout type="danger">{error}</Callout>}
-        <Button type="submit" className="w-full" disabled={busy}>
-          {busy ? 'Signing in…' : 'Sign in'}
-        </Button>
-      </form>
+      <Suspense fallback={<div className="h-44" />}>
+        <LoginForm />
+      </Suspense>
     </AuthShell>
   );
 }

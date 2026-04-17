@@ -1,7 +1,8 @@
-import NextAuth, { type DefaultSession, type NextAuthConfig } from 'next-auth';
+import NextAuth, { type DefaultSession } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { compare, hash } from 'bcryptjs';
 import { randomUUID } from 'node:crypto';
+import { authConfig as edgeConfig } from './auth.config.js';
 import { db } from './db.js';
 
 /**
@@ -65,10 +66,8 @@ export async function createUser(params: {
   };
 }
 
-export const authConfig: NextAuthConfig = {
-  session: { strategy: 'jwt', maxAge: 30 * 24 * 60 * 60 }, // 30 days
-  secret: process.env['NEXTAUTH_SECRET'],
-  trustHost: true,
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...edgeConfig,
   providers: [
     Credentials({
       name: 'Email + password',
@@ -93,6 +92,7 @@ export const authConfig: NextAuthConfig = {
     // TODO(P-12+): wire GitHub + Google + Resend magic-link providers.
   ],
   callbacks: {
+    ...edgeConfig.callbacks,
     jwt: async ({ token, user }) => {
       if (user && 'id' in user) token['uid'] = (user as { id: string }).id;
       return token;
@@ -103,13 +103,5 @@ export const authConfig: NextAuthConfig = {
       }
       return session;
     },
-    authorized: ({ auth, request }) => {
-      const { pathname } = request.nextUrl;
-      if (pathname.startsWith('/dashboard')) return !!auth;
-      return true;
-    },
   },
-  pages: { signIn: '/login' },
-};
-
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+});
