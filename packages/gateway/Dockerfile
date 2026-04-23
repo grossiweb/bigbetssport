@@ -14,7 +14,7 @@ WORKDIR /repo
 # Copy lockfile + every workspace package.json so `pnpm install` can run
 # without pulling the whole source tree (keeps this layer cacheable).
 FROM base AS deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY packages/shared/package.json        ./packages/shared/
 COPY packages/orchestrator/package.json  ./packages/orchestrator/
 COPY packages/normaliser/package.json    ./packages/normaliser/

@@ -11,7 +11,7 @@ RUN corepack enable && corepack prepare pnpm@9.12.3 --activate
 WORKDIR /repo
 
 FROM base AS deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY packages/shared/package.json        ./packages/shared/
 COPY packages/orchestrator/package.json  ./packages/orchestrator/
 COPY packages/normaliser/package.json    ./packages/normaliser/
