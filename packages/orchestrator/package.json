@@ -11,8 +11,9 @@
   "scripts": {
     "build": "tsc --noEmit",
     "dev": "tsx watch --env-file=../../.env src/main.ts",
-    "start": "tsx --env-file=../../.env src/main.ts",
+    "start": "tsx src/main.ts",
     "ingest:rundown": "tsx --env-file=../../.env scripts/ingest-rundown.ts",
+    "ingest:rundown:prod": "tsx scripts/ingest-rundown.ts",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint src"
   },
