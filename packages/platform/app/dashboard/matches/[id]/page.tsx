@@ -49,26 +49,22 @@ export default async function MatchDetailPage({
         </div>
       </div>
 
-      {match.homeScore !== null && match.awayScore !== null && (
-        <div className="card flex items-baseline gap-6">
-          <div className="text-center">
-            <div className="text-xs text-navy-500">{match.away}</div>
-            <div className="text-4xl font-bold tabular-nums text-navy-800">
-              {match.awayScore}
-            </div>
-          </div>
-          <div className="text-navy-300">—</div>
-          <div className="text-center">
-            <div className="text-xs text-navy-500">{match.home}</div>
-            <div className="text-4xl font-bold tabular-nums text-navy-800">
-              {match.homeScore}
-            </div>
-          </div>
-          <div className="ml-auto text-xs text-navy-500">
-            Source: <code className="rounded bg-navy-100 px-1 py-0.5">therundown</code>
-          </div>
+      <div className="card flex items-center gap-6">
+        <TeamPanel
+          name={match.away}
+          logoUrl={match.awayLogoUrl}
+          score={match.awayScore}
+        />
+        <div className="text-2xl text-navy-300">—</div>
+        <TeamPanel
+          name={match.home}
+          logoUrl={match.homeLogoUrl}
+          score={match.homeScore}
+        />
+        <div className="ml-auto text-xs text-navy-500">
+          Source: <code className="rounded bg-navy-100 px-1 py-0.5">therundown</code>
         </div>
-      )}
+      </div>
 
       {byMarket.size === 0 ? (
         <div className="card text-sm text-navy-500">
@@ -117,6 +113,36 @@ export default async function MatchDetailPage({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function TeamPanel({
+  name,
+  logoUrl,
+  score,
+}: {
+  name: string;
+  logoUrl: string | null;
+  score: number | null;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1 text-center">
+      {logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={logoUrl}
+          alt=""
+          className="h-14 w-14 rounded-sm object-contain"
+          loading="lazy"
+        />
+      ) : (
+        <div className="h-14 w-14 rounded-sm bg-navy-100" />
+      )}
+      <div className="text-xs font-medium text-navy-500">{name}</div>
+      <div className="text-4xl font-bold tabular-nums text-navy-800">
+        {score ?? '–'}
+      </div>
     </div>
   );
 }

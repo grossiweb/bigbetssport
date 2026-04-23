@@ -36,6 +36,8 @@ interface MatchRowDb {
   away: string;
   home_abbr: string | null;
   away_abbr: string | null;
+  home_logo_url: string | null;
+  away_logo_url: string | null;
   kickoff_utc: Date;
   status: string;
   home_score: string | null;
@@ -59,6 +61,8 @@ const MATCH_SELECT = `
   a.name            AS away,
   h.short_name      AS home_abbr,
   a.short_name      AS away_abbr,
+  h.logo_url        AS home_logo_url,
+  a.logo_url        AS away_logo_url,
   m.kickoff_utc     AS kickoff_utc,
   m.status          AS status,
   hs.value->>'score' AS home_score,
@@ -87,8 +91,8 @@ function mapMatch(r: MatchRowDb): Record<string, unknown> {
     id: r.id,
     sport: r.sport_type,
     league: r.league_name,
-    home: { name: r.home, short_name: r.home_abbr },
-    away: { name: r.away, short_name: r.away_abbr },
+    home: { name: r.home, short_name: r.home_abbr, logo_url: r.home_logo_url },
+    away: { name: r.away, short_name: r.away_abbr, logo_url: r.away_logo_url },
     kickoff_utc: r.kickoff_utc.toISOString(),
     status: r.status,
     score:

@@ -109,7 +109,7 @@ export default async function MatchesPage({
               <Link
                 key={m.id}
                 href={`/dashboard/matches/${m.id}`}
-                className="flex items-center justify-between px-4 py-3 transition hover:bg-navy-50"
+                className="flex items-center gap-4 px-4 py-3 transition hover:bg-navy-50"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-navy-500">
@@ -117,27 +117,25 @@ export default async function MatchesPage({
                     {m.leagueName && <span>· {m.leagueName}</span>}
                     <StatusBadge status={m.status} />
                   </div>
-                  <div className="mt-1 text-sm font-medium text-navy-800">
-                    <span>{m.away}</span>
-                    <span className="mx-2 text-navy-400">@</span>
-                    <span>{m.home}</span>
+                  <div className="mt-1 flex items-center gap-3 text-sm font-medium text-navy-800">
+                    <TeamBadge name={m.away} logoUrl={m.awayLogoUrl} />
+                    <span className="text-navy-400">@</span>
+                    <TeamBadge name={m.home} logoUrl={m.homeLogoUrl} />
                   </div>
-                  <div className="text-xs text-navy-500">
+                  <div className="mt-0.5 text-xs text-navy-500">
                     {formatDate(m.kickoffUtc)} UTC
                   </div>
                 </div>
-                <div className="flex items-center gap-4 text-right">
-                  <div>
-                    {m.homeScore !== null && m.awayScore !== null ? (
-                      <div className="text-lg font-semibold tabular-nums text-navy-800">
-                        {m.awayScore} – {m.homeScore}
-                      </div>
-                    ) : (
-                      <div className="text-xs text-navy-400">no score yet</div>
-                    )}
-                    <div className="text-[11px] text-navy-500">
-                      {m.oddsCount} odds rows
+                <div className="shrink-0 text-right">
+                  {m.homeScore !== null && m.awayScore !== null ? (
+                    <div className="text-lg font-semibold tabular-nums text-navy-800">
+                      {m.awayScore} – {m.homeScore}
                     </div>
+                  ) : (
+                    <div className="text-xs text-navy-400">no score yet</div>
+                  )}
+                  <div className="text-[11px] text-navy-500">
+                    {m.oddsCount} odds rows
                   </div>
                 </div>
               </Link>
@@ -146,6 +144,31 @@ export default async function MatchesPage({
         )}
       </div>
     </div>
+  );
+}
+
+function TeamBadge({
+  name,
+  logoUrl,
+}: {
+  name: string;
+  logoUrl: string | null;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={logoUrl}
+          alt=""
+          className="h-5 w-5 rounded-sm object-contain"
+          loading="lazy"
+        />
+      ) : (
+        <span className="h-5 w-5 rounded-sm bg-navy-100" />
+      )}
+      <span>{name}</span>
+    </span>
   );
 }
 

@@ -96,6 +96,17 @@ interface RundownEventsResponse {
   events?: readonly RundownEvent[];
 }
 
+// ---- Team name helper -----------------------------------------------------
+function teamDisplayName(name: string, mascot: string | undefined): string {
+  const n = name.trim();
+  const m = (mascot ?? '').trim();
+  if (!m) return n;
+  if (n.toLowerCase() === m.toLowerCase()) return n;
+  // Avoid "Oklahoma City Oklahoma City Thunder" (if mascot starts with name).
+  if (m.toLowerCase().startsWith(n.toLowerCase())) return m;
+  return `${n} ${m}`;
+}
+
 // ---- Status mapping -------------------------------------------------------
 function mapStatus(rundownStatus: string | undefined): string {
   if (!rundownStatus) return 'scheduled';
@@ -287,8 +298,11 @@ async function ingestSport(
     if (!home || !away) continue;
 
     try {
-      const homeName = `${home.name} ${home.mascot ?? ''}`.trim();
-      const awayName = `${away.name} ${away.mascot ?? ''}`.trim();
+      // Rundown returns `name` (city) + `mascot` (team short name) for US
+      // leagues ("Oklahoma City" + "Thunder"), but for soccer it mirrors
+      // the same string in both fields. Only concatenate when they differ.
+      const homeName = teamDisplayName(home.name, home.mascot);
+      const awayName = teamDisplayName(away.name, away.mascot);
       const homeId = await upsertTeam(c, home.team_id, homeName, home.abbreviation ?? null, leagueId);
       const awayId = await upsertTeam(c, away.team_id, awayName, away.abbreviation ?? null, leagueId);
       const matchId = await upsertMatch(c, ev, leagueId, homeId, awayId, mapping.sportSlug);

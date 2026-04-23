@@ -13,6 +13,8 @@ export interface MatchRow {
   readonly away: string;
   readonly homeAbbr: string | null;
   readonly awayAbbr: string | null;
+  readonly homeLogoUrl: string | null;
+  readonly awayLogoUrl: string | null;
   readonly kickoffUtc: Date;
   readonly status: string;
   readonly homeScore: number | null;
@@ -38,6 +40,8 @@ interface DbMatchRow {
   away: string;
   home_abbr: string | null;
   away_abbr: string | null;
+  home_logo_url: string | null;
+  away_logo_url: string | null;
   kickoff_utc: Date;
   status: string;
   home_score: string | null;
@@ -82,6 +86,8 @@ export async function listMatches(opts: {
        a.name            AS away,
        h.short_name      AS home_abbr,
        a.short_name      AS away_abbr,
+       h.logo_url        AS home_logo_url,
+       a.logo_url        AS away_logo_url,
        m.kickoff_utc     AS kickoff_utc,
        m.status          AS status,
        hs.value->>'score' AS home_score,
@@ -145,6 +151,8 @@ export async function getMatchById(id: string): Promise<MatchRow | null> {
        a.name            AS away,
        h.short_name      AS home_abbr,
        a.short_name      AS away_abbr,
+       h.logo_url        AS home_logo_url,
+       a.logo_url        AS away_logo_url,
        m.kickoff_utc     AS kickoff_utc,
        m.status          AS status,
        hs.value->>'score' AS home_score,
@@ -221,6 +229,8 @@ function rowToMatch(r: DbMatchRow): MatchRow {
     away: r.away,
     homeAbbr: r.home_abbr,
     awayAbbr: r.away_abbr,
+    homeLogoUrl: r.home_logo_url,
+    awayLogoUrl: r.away_logo_url,
     kickoffUtc: r.kickoff_utc,
     status: r.status,
     homeScore: r.home_score ? Number(r.home_score) : null,
