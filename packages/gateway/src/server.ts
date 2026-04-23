@@ -15,6 +15,7 @@ import { registerHealthRoute } from './routes/health.js';
 import { registerMetricsRoute } from './routes/metrics.js';
 import { registerSportsRoutes } from './routes/sports.js';
 import { registerMatchesRoutes } from './routes/matches.js';
+import { registerStoredMatchesRoutes } from './routes/stored-matches.js';
 import { registerTeamsRoutes } from './routes/teams.js';
 import { registerPlayersRoutes } from './routes/players.js';
 import { registerStandingsRoutes } from './routes/standings.js';
@@ -140,6 +141,7 @@ export async function buildServer(deps: GatewayDeps): Promise<FastifyInstance> {
   if (deps.pgPool) {
     await app.register(usageLoggerPlugin, { pool: deps.pgPool });
     await registerPlatformRoutes(app, { pool: deps.pgPool });
+    await registerStoredMatchesRoutes(app, { pgPool: deps.pgPool });
   }
 
   // ------- GraphQL --------------------------------------------------------

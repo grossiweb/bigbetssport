@@ -1,3 +1,4 @@
+import pg from 'pg';
 import { createRedisClient, createRedisPubSub } from '@bbs/shared';
 import {
   FieldCache,
@@ -28,10 +29,28 @@ async function main(): Promise<void> {
   const gapDetector = new GapDetector(redis, []);
   const router = new FieldRouter({ cache, orchestrator, adapters, gapDetector });
 
+  // Postgres pool — enables /v1/stored/* data routes + usage logging.
+  // Skipped if DATABASE_URL isn't set so the gateway still boots in
+  // environments that only want the live FieldRouter path.
+  const databaseUrl = process.env['DATABASE_URL'];
+  const pgPool = databaseUrl
+    ? new pg.Pool({
+        connectionString: databaseUrl,
+        max: Number(process.env['GATEWAY_DB_POOL_MAX'] ?? 10),
+        idleTimeoutMillis: 30_000,
+      })
+    : undefined;
+  if (pgPool) {
+    pgPool.on('error', (err) => {
+      console.error(`[gateway:db] pool error: ${err.message}`);
+    });
+  }
+
   const app = await buildServer({
     redis,
     router,
     rateLimiter: orchestrator,
+    pgPool,
     disableAuth: process.env['BBS_DISABLE_AUTH'] === '1',
   });
 
@@ -60,6 +79,7 @@ async function main(): Promise<void> {
       await orchestrator.close();
       await subscriber.quit();
       await redis.quit();
+      if (pgPool) await pgPool.end();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`[gateway] shutdown error: ${msg}`);
