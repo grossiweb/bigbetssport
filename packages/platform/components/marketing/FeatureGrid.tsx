@@ -1,33 +1,33 @@
 const FEATURES = [
   {
-    title: '20 data sources, 1 key',
+    title: 'Matches, odds, and linescores',
     body:
-      'NHL, MLB, NBA, FPL, TheRundown, Sportmonks — unified behind a single envelope. Never integrate a vendor directly again.',
+      'NFL, NBA, MLB, NHL, EPL, La Liga, Bundesliga, Serie A, Ligue 1, MLS — ingested daily with main-line odds, scores, and per-period breakdowns.',
   },
   {
-    title: 'Real-time WebSocket feed',
+    title: 'Team stats + player boxscores',
     body:
-      'socket.io rooms by sport, league, and match. Sub-50ms delivery for live scores and odds moves.',
+      'Boxscore-level stats for every finished game: field goals, rebounds, hits, errors, shots on goal. Per-player with positions and headshots.',
   },
   {
-    title: 'Cricket, MMA & Boxing',
+    title: 'Season standings',
     body:
-      'Scorecards, innings state, fight cards, bout stats — with proper schemas for every sport.',
+      'Current-season W/L records, win percentage, and streaks across 11 leagues — refreshed from league official data.',
   },
   {
     title: 'Free tier, no card needed',
     body:
-      '1,000 requests/day on the free plan. Sign up with GitHub; get a key in under 30 seconds.',
+      'Sign up with an email; get a read-only key in under 30 seconds. The full /v1/stored/* surface is open on the free plan.',
   },
   {
-    title: 'Confidence scoring',
+    title: 'Scoring plays timeline',
     body:
-      'Every field ships with provenance: 0.95 for official league APIs, 0.85 for aggregators, 0.60 for MCP scrapers.',
+      'Every scoring event with period, clock, description, and running score — reconstructed from league play-by-play feeds.',
   },
   {
-    title: 'Gap-fill with MCP scrapers',
+    title: 'Team logos + player headshots',
     body:
-      'When an upstream times out or omits a field, 10 specialised scrapers (fbref, SofaScore, UFCStats, BoxRec) fill the gap.',
+      '73% of teams carry official badges; 99% of active players have a headshot — no more hunting down assets.',
   },
 ];
 
@@ -39,9 +39,8 @@ export function FeatureGrid() {
           Built for the way developers actually work
         </h2>
         <p className="mt-3 text-navy-500">
-          Every API call returns the same envelope. Every field carries
-          provenance. Every source has a rate-limit and a circuit breaker.
-          No surprises.
+          One REST API, one response envelope, one predictable JSON shape across
+          every sport. Every field carries its source.
         </p>
       </div>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

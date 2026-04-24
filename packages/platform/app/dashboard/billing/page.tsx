@@ -1,6 +1,6 @@
-import { Button } from '@/components/Button';
 import { Badge } from '@/components/Badge';
 import { PricingCards } from '@/components/marketing/PricingCards';
+import { Callout } from '@/components/Callout';
 
 export default function BillingPage() {
   return (
@@ -8,7 +8,7 @@ export default function BillingPage() {
       <div>
         <h1 className="text-2xl font-semibold text-navy-800">Billing</h1>
         <p className="mt-1 text-sm text-navy-500">
-          Manage your plan, payment method, and invoices.
+          Plan + payment settings. Paid plans will land once Stripe is wired up.
         </p>
       </div>
 
@@ -17,37 +17,23 @@ export default function BillingPage() {
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-semibold text-navy-800">Current plan</h2>
             <Badge color="blue">free</Badge>
-            <Badge color="green">active</Badge>
+            <Badge color="green">early access</Badge>
           </div>
-          <p className="mt-1 text-sm text-navy-500">
-            1,000 requests/day · 100 requests/minute · REST + webhooks
-          </p>
-          <div className="mt-4 h-2 w-64 overflow-hidden rounded-full bg-navy-100">
-            <div className="h-2 rounded-full bg-brand" style={{ width: '12%' }} />
-          </div>
-          <p className="mt-1 text-xs text-navy-500">
-            120 / 1,000 requests used today (resets at 00:00 UTC)
+          <p className="mt-3 text-sm text-navy-500">
+            Full <code className="rounded bg-navy-100 px-1 py-0.5">/v1/stored/*</code>{' '}
+            read surface. No rate limits enforced during early access.
           </p>
         </div>
-        <form action="/api/billing/create-checkout" method="POST">
-          <input type="hidden" name="plan" value="starter" />
-          <Button type="submit">Upgrade plan</Button>
-        </form>
       </div>
 
-      <div className="card">
-        <h2 className="mb-2 text-lg font-semibold text-navy-800">Payment method</h2>
-        <p className="text-sm text-navy-500">
-          Manage your card, change billing address, and view invoices in the
-          Stripe Customer Portal.
-        </p>
-        <form action="/api/billing/portal" method="POST" className="mt-4">
-          <Button type="submit" variant="secondary">Open billing portal</Button>
-        </form>
-      </div>
+      <Callout type="info">
+        Stripe checkout + webhook handling are scaffolded in the codebase but
+        not connected to live products yet. Once live, upgrading will activate
+        higher throughput, API-key rotation analytics, and HMAC-signed webhooks.
+      </Callout>
 
       <div>
-        <h2 className="mb-4 text-lg font-semibold text-navy-800">Available plans</h2>
+        <h2 className="mb-4 text-lg font-semibold text-navy-800">Planned tiers</h2>
         <PricingCards />
       </div>
     </div>

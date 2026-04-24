@@ -8,36 +8,6 @@ const NAV_GROUPS = [
     items: [
       { href: '/docs/introduction', label: 'Introduction' },
       { href: '/docs/quickstart',   label: 'Quickstart' },
-      { href: '/docs/authentication', label: 'Authentication' },
-      { href: '/docs/errors',        label: 'Error codes' },
-      { href: '/docs/rate-limits',   label: 'Rate limits' },
-    ],
-  },
-  {
-    title: 'API Reference',
-    items: [
-      { href: '/docs/response-envelope', label: 'Response envelope' },
-      { href: '/docs/field-selection',   label: 'Field selection' },
-      { href: '/docs/matches',           label: 'Matches' },
-      { href: '/docs/players',           label: 'Players' },
-      { href: '/docs/standings',         label: 'Standings' },
-      { href: '/docs/cricket',           label: 'Cricket' },
-      { href: '/docs/combat-sports',     label: 'Combat sports' },
-    ],
-  },
-  {
-    title: 'Real-time',
-    items: [
-      { href: '/docs/websocket', label: 'WebSocket' },
-      { href: '/docs/webhooks',  label: 'Webhooks' },
-    ],
-  },
-  {
-    title: 'SDKs',
-    items: [
-      { href: '/docs/sdks/typescript', label: 'TypeScript' },
-      { href: '/docs/sdks/python',     label: 'Python' },
-      { href: '/docs/sdks/go',         label: 'Go' },
     ],
   },
 ];

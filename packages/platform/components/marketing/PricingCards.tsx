@@ -20,10 +20,10 @@ const PLANS: readonly Plan[] = [
     cta: 'Start free',
     ctaHref: '/signup',
     features: [
-      '1,000 requests / day',
-      '100 requests / minute',
-      'REST API (all endpoints)',
-      'Delayed odds (paid sources locked)',
+      'Full /v1/stored/* REST surface',
+      'Matches, odds, standings, rosters, stats',
+      'Team logos + player headshots',
+      'Dashboard with search + filters',
       'Email support',
     ],
   },
@@ -31,13 +31,13 @@ const PLANS: readonly Plan[] = [
     name: 'Starter',
     price: '$49',
     billed: 'per month',
-    cta: 'Subscribe',
-    ctaHref: '/signup?plan=starter',
+    cta: 'Coming soon',
+    ctaHref: '#',
     features: [
-      '50,000 requests / day',
-      '1,000 requests / minute',
-      'REST + webhooks',
-      'Odds with 5-min delay',
+      'Free plan, plus:',
+      'Higher request throughput',
+      'API key rotation via dashboard',
+      'Usage analytics charts',
       'Priority email support',
     ],
   },
@@ -45,16 +45,15 @@ const PLANS: readonly Plan[] = [
     name: 'Pro',
     price: '$149',
     billed: 'per month',
-    cta: 'Subscribe',
-    ctaHref: '/signup?plan=pro',
+    cta: 'Coming soon',
+    ctaHref: '#',
     highlight: true,
     features: [
-      '500,000 requests / day',
-      '5,000 requests / minute',
-      'WebSocket subscriptions',
-      'Real-time odds',
-      'xG + advanced stats',
-      '99.9% uptime SLA',
+      'Starter plan, plus:',
+      'HMAC-signed webhooks (planned)',
+      'WebSocket live feed (planned)',
+      'Historical backfill',
+      '99.9% uptime target',
     ],
   },
   {
@@ -64,10 +63,10 @@ const PLANS: readonly Plan[] = [
     cta: 'Talk to us',
     ctaHref: 'mailto:sales@bigballsports.io',
     features: [
-      'Unlimited requests',
+      'Volume pricing',
       'Dedicated infrastructure',
-      'Custom data sources',
-      'Dedicated support slack',
+      'Custom ingest sources',
+      'Dedicated support channel',
       'MSA + DPA',
     ],
   },
@@ -79,13 +78,11 @@ export function PricingCards() {
       <div className="mx-auto max-w-7xl px-6">
         <div className="mb-14 text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-navy-800 sm:text-4xl">
-            Simple pricing. Pay only for what you use.
+            Free during early access
           </h2>
           <p className="mt-3 text-navy-500">
-            Upgrade when you need more. Downgrade any time.
-            <span className="ml-2 inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-              Save 20% yearly
-            </span>
+            Paid tiers go live when Stripe is wired in. Prices below are
+            placeholders — final amounts may shift before launch.
           </p>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
