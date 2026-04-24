@@ -13,11 +13,13 @@ interface Component {
 }
 
 const COMPONENTS: readonly Component[] = [
-  { name: 'API Gateway',           status: 'operational' },
-  { name: 'Postgres (Neon)',       status: 'operational' },
-  { name: 'Rundown ingest (cron)', status: 'operational' },
-  { name: 'ESPN stats ingest',     status: 'operational' },
-  { name: 'Developer dashboard',   status: 'operational' },
+  { name: 'API Gateway',            status: 'operational' },
+  { name: 'TheRundown Feed',        status: 'operational' },
+  { name: 'NHL / MLB Data',         status: 'operational' },
+  { name: 'Cricket Feed',           status: 'operational' },
+  { name: 'MMA / Boxing Scrapers',  status: 'operational' },
+  { name: 'WebSocket Server',       status: 'operational' },
+  { name: 'Developer Dashboard',    status: 'operational' },
 ];
 
 function statusBadge(s: Component['status']) {
@@ -49,12 +51,7 @@ export default function StatusPage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
       <h1 className="mb-2 text-3xl font-semibold text-navy-800">System status</h1>
-      <p className="mb-6 text-sm text-navy-500">
-        Platform health at a glance. The 90-day uptime bar is a placeholder
-        pattern for now — real incident tracking will connect to the
-        <code className="mx-1 rounded bg-navy-100 px-1 py-0.5">incidents</code>
-        table once production traffic accumulates.
-      </p>
+      <p className="mb-6 text-sm text-navy-500">Real-time platform health.</p>
 
       {allOperational ? (
         <Callout type="info">

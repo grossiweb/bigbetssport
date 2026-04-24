@@ -6,15 +6,14 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'sw
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'Big Ball Sports — Sports Data API',
+  title: 'Big Ball Sports — Unified Sports Data API',
   description:
-    'Matches, odds, standings, rosters, team + player boxscores across NBA, NFL, MLB, NHL and the top European soccer leagues — behind one REST API.',
-  metadataBase: new URL('https://bigbetssport.vercel.app'),
+    'One API. 20+ sources. Real-time scores, odds, lineups, stats — for every sport.',
+  metadataBase: new URL('https://bigballsports.io'),
   openGraph: {
     title: 'Big Ball Sports',
-    description:
-      'Matches, odds, standings, rosters, boxscores — one REST API for every major league.',
-    url: 'https://bigbetssport.vercel.app',
+    description: 'The sports data API built for developers.',
+    url: 'https://bigballsports.io',
     siteName: 'Big Ball Sports',
   },
 };

@@ -1,33 +1,33 @@
 const FEATURES = [
   {
-    title: 'Matches, odds, and linescores',
+    title: '20 data sources, 1 key',
     body:
-      'NFL, NBA, MLB, NHL, EPL, La Liga, Bundesliga, Serie A, Ligue 1, MLS — ingested daily with main-line odds, scores, and per-period breakdowns.',
+      'NHL, MLB, NBA, FPL, TheRundown, Sportmonks — unified behind a single envelope. Never integrate a vendor directly again.',
   },
   {
-    title: 'Team stats + player boxscores',
+    title: 'Real-time WebSocket feed',
     body:
-      'Boxscore-level stats for every finished game: field goals, rebounds, hits, errors, shots on goal. Per-player with positions and headshots.',
+      'socket.io rooms by sport, league, and match. Sub-50ms delivery for live scores and odds moves.',
   },
   {
-    title: 'Season standings',
+    title: 'Cricket, MMA & Boxing',
     body:
-      'Current-season W/L records, win percentage, and streaks across 11 leagues — refreshed from league official data.',
+      'Scorecards, innings state, fight cards, bout stats — with proper schemas for every sport.',
   },
   {
     title: 'Free tier, no card needed',
     body:
-      'Sign up with an email; get a read-only key in under 30 seconds. The full /v1/stored/* surface is open on the free plan.',
+      '1,000 requests/day on the free plan. Sign up with GitHub; get a key in under 30 seconds.',
   },
   {
-    title: 'Scoring plays timeline',
+    title: 'Confidence scoring',
     body:
-      'Every scoring event with period, clock, description, and running score — reconstructed from league play-by-play feeds.',
+      'Every field ships with provenance: 0.95 for official league APIs, 0.85 for aggregators, 0.60 for MCP scrapers.',
   },
   {
-    title: 'Team logos + player headshots',
+    title: 'Gap-fill with MCP scrapers',
     body:
-      '73% of teams carry official badges; 99% of active players have a headshot — no more hunting down assets.',
+      'When an upstream times out or omits a field, 10 specialised scrapers (fbref, SofaScore, UFCStats, BoxRec) fill the gap.',
   },
 ];
 
@@ -39,8 +39,9 @@ export function FeatureGrid() {
           Built for the way developers actually work
         </h2>
         <p className="mt-3 text-navy-500">
-          One REST API, one response envelope, one predictable JSON shape across
-          every sport. Every field carries its source.
+          Every API call returns the same envelope. Every field carries
+          provenance. Every source has a rate-limit and a circuit breaker.
+          No surprises.
         </p>
       </div>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

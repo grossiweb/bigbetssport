@@ -17,36 +17,33 @@ export default function PricingPage() {
         <h2 className="mb-8 text-2xl font-semibold text-navy-800">Frequently asked</h2>
         <div className="space-y-6 text-sm text-navy-600">
           <div>
-            <h3 className="font-semibold text-navy-800">What's actually live today?</h3>
-            <p className="mt-1">
-              Matches, odds, standings, team + player rosters, boxscores, and
-              scoring plays across NBA / NFL / MLB / NHL / NCAAF and the top
-              European soccer leagues. Read the coverage table on the home page
-              for field-by-field status.
-            </p>
-          </div>
-          <div>
             <h3 className="font-semibold text-navy-800">How do rate limits work?</h3>
             <p className="mt-1">
-              The free plan is open during early access — no per-key rate
-              limits enforced yet. We'll introduce per-minute + per-day buckets
-              when paid plans go live; existing keys will be grandfathered.
+              Two buckets: per-minute (sliding window) + per-day (UTC fixed window).
+              Every response carries X-RateLimit-Remaining; 429 responses include
+              a Retry-After header.
             </p>
           </div>
           <div>
-            <h3 className="font-semibold text-navy-800">When will paid plans ship?</h3>
+            <h3 className="font-semibold text-navy-800">Can I downgrade or cancel anytime?</h3>
             <p className="mt-1">
-              We're wiring Stripe next. Once paid plans are live, you'll be able
-              to upgrade from the dashboard and start using higher throughput +
-              webhooks + (eventually) the WebSocket live feed.
+              Yes — manage your plan from the dashboard or the Stripe Customer
+              Portal. Downgrades take effect at the next billing cycle.
             </p>
           </div>
           <div>
-            <h3 className="font-semibold text-navy-800">Will existing keys stop working?</h3>
+            <h3 className="font-semibold text-navy-800">What counts as one request?</h3>
             <p className="mt-1">
-              No. Free plan keeps the core <code className="font-mono text-xs">/v1/stored/*</code>{' '}
-              read surface. Paid tiers add throughput, webhooks, and advanced
-              endpoints, not a paywall on what already works.
+              One HTTP request to any <code className="font-mono text-xs">/v1/*</code> endpoint.
+              Fields inside a response don't count separately. Webhook deliveries
+              do NOT count against your rate limit.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-navy-800">What if I exceed my plan?</h3>
+            <p className="mt-1">
+              The gateway returns 429. You can upgrade instantly — new limits
+              apply immediately.
             </p>
           </div>
         </div>

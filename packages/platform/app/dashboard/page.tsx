@@ -63,27 +63,27 @@ export default async function DashboardOverview() {
         <MetricCard
           label="Plan"
           value={<span className="capitalize">Free</span>}
-          helper="Early access"
+          helper="1,000 req/day"
         />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="card">
-          <h2 className="mb-2 text-sm font-semibold text-navy-800">Requests by endpoint</h2>
+          <h2 className="mb-2 text-sm font-semibold text-navy-800">Requests by sport</h2>
           <p className="text-xs text-navy-500">
-            Per-endpoint breakdown. Populates once request logging is live.
+            Per-sport request breakdown. Chart renders once data flows through.
           </p>
           <div className="mt-4 flex h-40 items-center justify-center rounded-lg bg-navy-50 text-xs text-navy-400">
-            Chart unlocks in the Usage tab
+            (Recharts bar chart — hook up /platform/usage data)
           </div>
         </div>
         <div className="card">
-          <h2 className="mb-2 text-sm font-semibold text-navy-800">Status codes</h2>
+          <h2 className="mb-2 text-sm font-semibold text-navy-800">Response source</h2>
           <p className="text-xs text-navy-500">
-            2xx / 4xx / 5xx split — useful for spotting auth or quota issues.
+            Where your data came from: direct API, cache, or MCP fallback.
           </p>
           <div className="mt-4 flex h-40 items-center justify-center rounded-lg bg-navy-50 text-xs text-navy-400">
-            Chart unlocks in the Usage tab
+            (Recharts donut chart — api / cache / mcp)
           </div>
         </div>
       </div>
@@ -99,22 +99,22 @@ export default async function DashboardOverview() {
           <li className="flex items-start gap-3">
             <Badge color="blue">New</Badge>
             <div>
-              <div className="font-medium text-navy-800">Team + player boxscores for finished games</div>
-              <div className="text-xs text-navy-500">ESPN boxscore ingest — per-period linescore, scoring plays, 5,800+ player stat rows</div>
+              <div className="font-medium text-navy-800">WebSocket subscriptions available on Pro</div>
+              <div className="text-xs text-navy-500">2026-05-15</div>
             </div>
           </li>
           <li className="flex items-start gap-3">
             <Badge color="blue">New</Badge>
             <div>
-              <div className="font-medium text-navy-800">Player rosters with headshots</div>
-              <div className="text-xs text-navy-500">1,600 players across NBA, NFL, MLB, NHL + top European soccer</div>
+              <div className="font-medium text-navy-800">Cricket, MMA and Boxing support added</div>
+              <div className="text-xs text-navy-500">2026-04-15</div>
             </div>
           </li>
           <li className="flex items-start gap-3">
             <Badge color="green">Improved</Badge>
             <div>
-              <div className="font-medium text-navy-800">Season standings + team logos</div>
-              <div className="text-xs text-navy-500">11 leagues · 386 standings rows · team badges</div>
+              <div className="font-medium text-navy-800">Initial release</div>
+              <div className="text-xs text-navy-500">2026-04-01</div>
             </div>
           </li>
         </ul>
