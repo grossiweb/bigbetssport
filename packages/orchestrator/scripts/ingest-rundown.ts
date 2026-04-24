@@ -41,6 +41,9 @@ const SPORT_MAP: readonly SportMapping[] = [
   { rundownSportId: 13, sportSlug: 'football',          leagueName: 'Bundesliga' },
   { rundownSportId: 14, sportSlug: 'football',          leagueName: 'La Liga' },
   { rundownSportId: 15, sportSlug: 'football',          leagueName: 'Serie A' },
+  // Cricket — Rundown has IPL (20) and T20 international (21).
+  { rundownSportId: 20, sportSlug: 'cricket',           leagueName: 'IPL' },
+  { rundownSportId: 21, sportSlug: 'cricket',           leagueName: 'T20I Cricket' },
 ];
 
 // ---- Rundown API response shapes (minimal subset) -------------------------

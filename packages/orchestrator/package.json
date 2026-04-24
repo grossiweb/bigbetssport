@@ -18,6 +18,8 @@
     "enrich:thesportsdb:prod": "tsx scripts/enrich-thesportsdb.ts",
     "ingest:standings": "tsx --env-file=../../.env scripts/ingest-standings-espn.ts",
     "ingest:standings:prod": "tsx scripts/ingest-standings-espn.ts",
+    "ingest:players": "tsx --env-file=../../.env scripts/ingest-players-thesportsdb.ts",
+    "ingest:players:prod": "tsx scripts/ingest-players-thesportsdb.ts",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint src"
   },

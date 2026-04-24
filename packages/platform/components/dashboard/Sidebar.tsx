@@ -8,6 +8,7 @@ const NAV = [
   { href: '/dashboard',          label: 'Overview' },
   { href: '/dashboard/matches',  label: 'Matches' },
   { href: '/dashboard/standings', label: 'Standings' },
+  { href: '/dashboard/players',   label: 'Players' },
   { href: '/dashboard/keys',     label: 'API Keys' },
   { href: '/dashboard/usage',    label: 'Usage' },
   { href: '/dashboard/webhooks', label: 'Webhooks' },
