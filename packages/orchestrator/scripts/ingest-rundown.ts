@@ -144,6 +144,25 @@ async function getLeagueId(c: Client, sportId: string, leagueName: string): Prom
   return row.bbs_id;
 }
 
+async function upsertVenue(
+  c: Client,
+  name: string,
+  location: string | null,
+): Promise<void> {
+  if (!name) return;
+  const existing = await c.query<{ bbs_id: string }>(
+    `SELECT bbs_id FROM venues WHERE name = $1 LIMIT 1`,
+    [name],
+  );
+  if (existing.rows[0]) return;
+  const city = location?.split(',')[0]?.trim() ?? null;
+  const country = location?.split(',').slice(-1)[0]?.trim() ?? null;
+  await c.query(
+    `INSERT INTO venues (name, city, country) VALUES ($1, $2, $3)`,
+    [name, city, country],
+  );
+}
+
 async function upsertTeam(
   c: Client,
   rundownId: number,
@@ -191,6 +210,12 @@ async function upsertMatch(
       ? JSON.stringify({ home: homeByPeriod, away: awayByPeriod })
       : null;
   const broadcast = event.score?.broadcast ?? null;
+
+  // Venue: ensure it exists (no FK on matches.venue_id yet, but we keep
+  // venues deduped by name for future wiring).
+  if (event.score?.venue_name) {
+    await upsertVenue(c, event.score.venue_name, event.score.venue_location ?? null);
+  }
 
   if (row) {
     await c.query(
@@ -367,11 +392,20 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const backDaysArg = flagValue('--back-days') ?? process.env['INGEST_BACK_DAYS'] ?? '0';
+  const backDays = Math.max(0, Math.min(30, Number.parseInt(backDaysArg, 10) || 0));
+
   const dates: string[] = [];
   if (dateArg) {
     dates.push(dateArg);
   } else {
     const today = new Date();
+    // Past days first (oldest → newest), then today + future.
+    for (let i = backDays; i > 0; i -= 1) {
+      const d = new Date(today);
+      d.setUTCDate(d.getUTCDate() - i);
+      dates.push(d.toISOString().slice(0, 10));
+    }
     for (let i = 0; i < days; i += 1) {
       const d = new Date(today);
       d.setUTCDate(d.getUTCDate() + i);
