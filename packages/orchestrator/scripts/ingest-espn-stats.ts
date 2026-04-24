@@ -98,7 +98,48 @@ interface EspnPlayerBlock {
   }>;
 }
 
+interface EspnLineScore {
+  displayValue?: string;
+  value?: number;
+}
+
+interface EspnHeaderCompetitor {
+  homeAway: 'home' | 'away';
+  team: { id: string; displayName: string };
+  linescores?: readonly EspnLineScore[];
+}
+
+interface EspnPlay {
+  id: string;
+  sequenceNumber?: string;
+  type?: { text?: string };
+  text?: string;
+  shortDescription?: string;
+  awayScore?: number;
+  homeScore?: number;
+  period?: { number?: number; displayValue?: string };
+  clock?: { displayValue?: string };
+  scoringPlay?: boolean;
+  scoreValue?: number;
+  team?: { id?: string };
+  participants?: ReadonlyArray<{ athlete?: { id?: string } }>;
+  wallclock?: string;
+  coordinate?: { x?: number; y?: number };
+}
+
+interface EspnGameInfo {
+  venue?: { fullName?: string };
+  attendance?: number;
+}
+
 interface EspnSummary {
+  header?: {
+    competitions?: ReadonlyArray<{
+      competitors?: readonly EspnHeaderCompetitor[];
+      broadcast?: string | null;
+    }>;
+  };
+  gameInfo?: EspnGameInfo;
   boxscore?: {
     teams?: ReadonlyArray<{
       team: { id: string; displayName: string };
@@ -110,6 +151,7 @@ interface EspnSummary {
       statistics?: readonly EspnPlayerBlock[];
     }>;
   };
+  plays?: readonly EspnPlay[];
 }
 
 // ---- Helpers -------------------------------------------------------------
@@ -289,7 +331,13 @@ async function processMatch(
   match: MatchRow,
   mapping: EspnLeagueMapping,
   scoreboardCache: Map<string, readonly EspnScoreboardEvent[]>,
-): Promise<{ teamStats: number; playerStats: number; playersCreated: number }> {
+): Promise<{
+  teamStats: number;
+  playerStats: number;
+  playersCreated: number;
+  plays: number;
+  linescorePopulated: boolean;
+}> {
   const yyyymmdd = espnDate(match.kickoff_utc);
   const cacheKey = `${mapping.espnSport}/${mapping.espnLeague}/${yyyymmdd}`;
   let events = scoreboardCache.get(cacheKey);
@@ -300,7 +348,15 @@ async function processMatch(
   }
 
   const ev = await matchToEspnEvent(events, match);
-  if (!ev) return { teamStats: 0, playerStats: 0, playersCreated: 0 };
+  if (!ev) {
+    return {
+      teamStats: 0,
+      playerStats: 0,
+      playersCreated: 0,
+      plays: 0,
+      linescorePopulated: false,
+    };
+  }
 
   const summary = await fetchSummary(mapping, ev.id);
 
@@ -312,9 +368,13 @@ async function processMatch(
     [ev.id, match.bbs_id],
   );
 
-  // Wipe previous ESPN stats for this match, then re-insert fresh.
-  await c.query(`DELETE FROM match_stats  WHERE match_id = $1 AND source = 'espn'`, [match.bbs_id]);
-  await c.query(`DELETE FROM player_stats WHERE match_id = $1 AND source = 'espn'`, [match.bbs_id]);
+  // --- Per-match metadata: linescore, attendance, broadcast ---
+  const linescorePopulated = await updateMatchMeta(c, match, summary);
+
+  // Wipe previous ESPN-sourced rows for this match, then re-insert fresh.
+  await c.query(`DELETE FROM match_stats   WHERE match_id = $1 AND source = 'espn'`, [match.bbs_id]);
+  await c.query(`DELETE FROM player_stats  WHERE match_id = $1 AND source = 'espn'`, [match.bbs_id]);
+  await c.query(`DELETE FROM match_events  WHERE match_id = $1 AND source = 'espn'`, [match.bbs_id]);
 
   // --- Team stats ---
   let teamStats = 0;
@@ -359,7 +419,146 @@ async function processMatch(
   const playerCountAfter = await c.query<{ c: string }>(`SELECT COUNT(*)::text AS c FROM players`);
   playersCreated = Number(playerCountAfter.rows[0]?.c ?? 0) - Number(playerCountBefore.rows[0]?.c ?? 0);
 
-  return { teamStats, playerStats, playersCreated };
+  // --- Play-by-play events ---
+  const playsInserted = await insertPlays(c, match, summary.plays ?? []);
+
+  return {
+    teamStats,
+    playerStats,
+    playersCreated,
+    plays: playsInserted,
+    linescorePopulated,
+  };
+}
+
+// ---- Linescore + game metadata -------------------------------------------
+
+async function updateMatchMeta(
+  c: Client,
+  match: MatchRow,
+  summary: EspnSummary,
+): Promise<boolean> {
+  const competitors = summary.header?.competitions?.[0]?.competitors ?? [];
+  const home = competitors.find((x) => x.homeAway === 'home');
+  const away = competitors.find((x) => x.homeAway === 'away');
+
+  const homeScores = (home?.linescores ?? [])
+    .map((l) => (l.value ?? (l.displayValue ? Number(l.displayValue) : null)))
+    .filter((n): n is number => typeof n === 'number' && !Number.isNaN(n));
+  const awayScores = (away?.linescores ?? [])
+    .map((l) => (l.value ?? (l.displayValue ? Number(l.displayValue) : null)))
+    .filter((n): n is number => typeof n === 'number' && !Number.isNaN(n));
+
+  const linescoreValid = homeScores.length > 0 && awayScores.length > 0;
+  const linescore = linescoreValid
+    ? JSON.stringify({ home: homeScores, away: awayScores })
+    : null;
+
+  const attendance = summary.gameInfo?.attendance ?? null;
+  const broadcast = summary.header?.competitions?.[0]?.broadcast ?? null;
+
+  await c.query(
+    `UPDATE matches
+       SET linescore  = COALESCE($1::jsonb, linescore),
+           attendance = COALESCE($2, attendance),
+           broadcast  = COALESCE($3, broadcast)
+     WHERE bbs_id = $4`,
+    [linescore, attendance, broadcast, match.bbs_id],
+  );
+  return linescoreValid;
+}
+
+// ---- Play-by-play --------------------------------------------------------
+
+/** ESPN emits -2147483640 when coords are N/A. Filter those out. */
+function validCoord(n: number | undefined): number | null {
+  if (typeof n !== 'number') return null;
+  if (!Number.isFinite(n)) return null;
+  if (Math.abs(n) > 10_000) return null;
+  return n;
+}
+
+async function insertPlays(
+  c: Client,
+  match: MatchRow,
+  plays: readonly EspnPlay[],
+): Promise<number> {
+  if (plays.length === 0) return 0;
+
+  // Cache our team ids keyed by ESPN team id (if we have them).
+  const teamsResult = await c.query<{ bbs_id: string; espn_id: string }>(
+    `SELECT bbs_id, external_ids->>'espn' AS espn_id
+       FROM teams
+       WHERE bbs_id IN ($1::uuid, $2::uuid) AND external_ids ? 'espn'`,
+    [match.home_id, match.away_id],
+  );
+  const teamByEspnId = new Map<string, string>();
+  for (const r of teamsResult.rows) {
+    if (r.espn_id) teamByEspnId.set(r.espn_id, r.bbs_id);
+  }
+
+  // Cache player ids keyed by ESPN athlete id.
+  const playerIdCache = new Map<string, string>();
+  async function resolvePlayer(espnAthleteId: string): Promise<string | null> {
+    if (playerIdCache.has(espnAthleteId)) {
+      return playerIdCache.get(espnAthleteId) ?? null;
+    }
+    const r = await c.query<{ bbs_id: string }>(
+      `SELECT bbs_id FROM players WHERE external_ids->>'espn' = $1 LIMIT 1`,
+      [espnAthleteId],
+    );
+    const id = r.rows[0]?.bbs_id ?? null;
+    if (id) playerIdCache.set(espnAthleteId, id);
+    return id;
+  }
+
+  let n = 0;
+  for (const p of plays) {
+    const teamId = p.team?.id ? teamByEspnId.get(p.team.id) ?? null : null;
+    const firstAthleteEspn = p.participants?.[0]?.athlete?.id;
+    const playerId = firstAthleteEspn ? await resolvePlayer(firstAthleteEspn) : null;
+
+    const seq = p.sequenceNumber ? Number.parseInt(p.sequenceNumber, 10) : null;
+    const x = validCoord(p.coordinate?.x);
+    const y = validCoord(p.coordinate?.y);
+    const wallclock = p.wallclock ? new Date(p.wallclock) : null;
+
+    try {
+      await c.query(
+        `INSERT INTO match_events
+           (match_id, source, external_id, sequence_number, period, period_display,
+            clock, type, description, team_id, player_id, scoring_play, score_value,
+            home_score, away_score, coordinate_x, coordinate_y, wallclock)
+         VALUES ($1, 'espn', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+         ON CONFLICT (match_id, source, external_id) DO NOTHING`,
+        [
+          match.bbs_id,
+          p.id,
+          seq,
+          p.period?.number ?? null,
+          p.period?.displayValue ?? null,
+          p.clock?.displayValue ?? null,
+          p.type?.text ?? null,
+          p.text ?? p.shortDescription ?? null,
+          teamId,
+          playerId,
+          p.scoringPlay ?? false,
+          p.scoreValue ?? null,
+          p.homeScore ?? null,
+          p.awayScore ?? null,
+          x,
+          y,
+          wallclock,
+        ],
+      );
+      n += 1;
+    } catch (err) {
+      // Most likely a FK violation; skip this play.
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`    ✗ play ${p.id}: ${msg}`);
+    }
+  }
+  return n;
 }
 
 // ---- Main ----------------------------------------------------------------
@@ -419,6 +618,8 @@ async function main(): Promise<void> {
     let totalTeamStats = 0;
     let totalPlayerStats = 0;
     let totalPlayersCreated = 0;
+    let totalPlays = 0;
+    let matchesWithLinescore = 0;
 
     for (const match of matches.rows) {
       // Find the correct ESPN league mapping
@@ -434,21 +635,31 @@ async function main(): Promise<void> {
       const label = `${match.away_name} @ ${match.home_name} (${match.league_name})`;
       process.stdout.write(`  · ${label} … `);
       try {
-        const { teamStats, playerStats, playersCreated } = await processMatch(
-          client,
-          match,
-          mapping,
-          scoreboardCache,
-        );
-        if (teamStats === 0 && playerStats === 0) {
+        const result = await processMatch(client, match, mapping, scoreboardCache);
+        if (
+          result.teamStats === 0 &&
+          result.playerStats === 0 &&
+          result.plays === 0 &&
+          !result.linescorePopulated
+        ) {
           nomatch += 1;
           console.log('no ESPN event found');
         } else {
           ok += 1;
-          totalTeamStats += teamStats;
-          totalPlayerStats += playerStats;
-          totalPlayersCreated += playersCreated;
-          console.log(`${teamStats} team / ${playerStats} player stats${playersCreated > 0 ? ` (+${playersCreated} new players)` : ''}`);
+          totalTeamStats += result.teamStats;
+          totalPlayerStats += result.playerStats;
+          totalPlayersCreated += result.playersCreated;
+          totalPlays += result.plays;
+          if (result.linescorePopulated) matchesWithLinescore += 1;
+          const parts: string[] = [];
+          if (result.linescorePopulated) parts.push('linescore');
+          if (result.teamStats > 0) parts.push(`${result.teamStats} team`);
+          if (result.playerStats > 0) parts.push(`${result.playerStats} player`);
+          if (result.plays > 0) parts.push(`${result.plays} plays`);
+          console.log(
+            (parts.join(' / ') || 'event found') +
+              (result.playersCreated > 0 ? ` (+${result.playersCreated} new players)` : ''),
+          );
         }
       } catch (err) {
         nomatch += 1;
@@ -460,9 +671,11 @@ async function main(): Promise<void> {
 
     console.log(
       `\n✓ done. ${ok} matches processed, ${nomatch} skipped.` +
-      `\n  Team stats: ${totalTeamStats} rows` +
-      `\n  Player stats: ${totalPlayerStats} rows` +
-      `\n  New players auto-created: ${totalPlayersCreated}`,
+        `\n  Linescore populated: ${matchesWithLinescore} match(es)` +
+        `\n  Team stats: ${totalTeamStats} rows` +
+        `\n  Player stats: ${totalPlayerStats} rows` +
+        `\n  Match events (plays): ${totalPlays} rows` +
+        `\n  New players auto-created: ${totalPlayersCreated}`,
     );
   } finally {
     await client.end();

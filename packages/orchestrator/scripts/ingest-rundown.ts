@@ -51,8 +51,11 @@ interface RundownScore {
   event_status?: string;
   score_home?: number;
   score_away?: number;
+  score_home_by_period?: readonly number[];
+  score_away_by_period?: readonly number[];
   venue_name?: string;
   venue_location?: string;
+  broadcast?: string;
 }
 
 interface RundownTeam {
@@ -180,22 +183,35 @@ async function upsertMatch(
   const row = existing.rows[0];
   const status = mapStatus(event.score?.event_status);
 
+  // Per-period scores → matches.linescore JSONB (only set if populated).
+  const homeByPeriod = event.score?.score_home_by_period ?? [];
+  const awayByPeriod = event.score?.score_away_by_period ?? [];
+  const linescore =
+    homeByPeriod.length > 0 && awayByPeriod.length > 0
+      ? JSON.stringify({ home: homeByPeriod, away: awayByPeriod })
+      : null;
+  const broadcast = event.score?.broadcast ?? null;
+
   if (row) {
     await c.query(
       `UPDATE matches
          SET status = $1,
              kickoff_utc = $2::timestamptz,
+             linescore = COALESCE($3::jsonb, linescore),
+             broadcast = COALESCE($4, broadcast),
              updated_at = NOW()
-       WHERE bbs_id = $3`,
-      [status, event.event_date, row.bbs_id],
+       WHERE bbs_id = $5`,
+      [status, event.event_date, linescore, broadcast, row.bbs_id],
     );
     return row.bbs_id;
   }
 
   const id = randomUUID();
   await c.query(
-    `INSERT INTO matches (bbs_id, league_id, home_id, away_id, kickoff_utc, status, sport_type, external_ids)
-       VALUES ($1, $2, $3, $4, $5::timestamptz, $6, $7, $8::jsonb)`,
+    `INSERT INTO matches
+       (bbs_id, league_id, home_id, away_id, kickoff_utc, status,
+        sport_type, linescore, broadcast, external_ids)
+     VALUES ($1, $2, $3, $4, $5::timestamptz, $6, $7, $8::jsonb, $9, $10::jsonb)`,
     [
       id,
       leagueId,
@@ -204,6 +220,8 @@ async function upsertMatch(
       event.event_date,
       status,
       sportSlug,
+      linescore,
+      broadcast,
       JSON.stringify({ therundown: event.event_id }),
     ],
   );

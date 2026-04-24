@@ -19,6 +19,7 @@ import { registerStoredMatchesRoutes } from './routes/stored-matches.js';
 import { registerStoredStandingsRoutes } from './routes/stored-standings.js';
 import { registerStoredPlayersRoutes } from './routes/stored-players.js';
 import { registerStoredStatsRoutes } from './routes/stored-stats.js';
+import { registerStoredPlaysRoutes } from './routes/stored-plays.js';
 import { registerTeamsRoutes } from './routes/teams.js';
 import { registerPlayersRoutes } from './routes/players.js';
 import { registerStandingsRoutes } from './routes/standings.js';
@@ -148,6 +149,7 @@ export async function buildServer(deps: GatewayDeps): Promise<FastifyInstance> {
     await registerStoredStandingsRoutes(app, { pgPool: deps.pgPool });
     await registerStoredPlayersRoutes(app, { pgPool: deps.pgPool });
     await registerStoredStatsRoutes(app, { pgPool: deps.pgPool });
+    await registerStoredPlaysRoutes(app, { pgPool: deps.pgPool });
   }
 
   // ------- GraphQL --------------------------------------------------------

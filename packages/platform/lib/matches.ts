@@ -21,6 +21,26 @@ export interface MatchRow {
   readonly awayScore: number | null;
   readonly oddsCount: number;
   readonly externalIds: Record<string, string>;
+  readonly linescore: { home: readonly number[]; away: readonly number[] } | null;
+  readonly attendance: number | null;
+  readonly broadcast: string | null;
+}
+
+export interface MatchEventRow {
+  readonly id: string;
+  readonly sequenceNumber: number | null;
+  readonly period: number | null;
+  readonly periodDisplay: string | null;
+  readonly clock: string | null;
+  readonly type: string | null;
+  readonly description: string | null;
+  readonly scoringPlay: boolean;
+  readonly scoreValue: number | null;
+  readonly homeScore: number | null;
+  readonly awayScore: number | null;
+  readonly teamId: string | null;
+  readonly coordinateX: number | null;
+  readonly coordinateY: number | null;
 }
 
 export interface LatestOddsRow {
@@ -48,6 +68,9 @@ interface DbMatchRow {
   away_score: string | null;
   odds_count: string;
   external_ids: Record<string, string>;
+  linescore: { home: number[]; away: number[] } | null;
+  attendance: number | null;
+  broadcast: string | null;
 }
 
 export async function listMatches(opts: {
@@ -93,7 +116,10 @@ export async function listMatches(opts: {
        hs.value->>'score' AS home_score,
        as_.value->>'score' AS away_score,
        (SELECT COUNT(*) FROM odds o WHERE o.match_id = m.bbs_id) AS odds_count,
-       m.external_ids
+       m.external_ids,
+       m.linescore,
+       m.attendance,
+       m.broadcast
      FROM matches m
      LEFT JOIN leagues l ON l.bbs_id = m.league_id
      LEFT JOIN teams   h ON h.bbs_id = m.home_id
@@ -158,7 +184,10 @@ export async function getMatchById(id: string): Promise<MatchRow | null> {
        hs.value->>'score' AS home_score,
        as_.value->>'score' AS away_score,
        (SELECT COUNT(*) FROM odds o WHERE o.match_id = m.bbs_id) AS odds_count,
-       m.external_ids
+       m.external_ids,
+       m.linescore,
+       m.attendance,
+       m.broadcast
      FROM matches m
      LEFT JOIN leagues l ON l.bbs_id = m.league_id
      LEFT JOIN teams   h ON h.bbs_id = m.home_id
@@ -237,5 +266,75 @@ function rowToMatch(r: DbMatchRow): MatchRow {
     awayScore: r.away_score ? Number(r.away_score) : null,
     oddsCount: Number(r.odds_count),
     externalIds: r.external_ids ?? {},
+    linescore: r.linescore ?? null,
+    attendance: r.attendance,
+    broadcast: r.broadcast,
   };
+}
+
+/** Latest scoring plays (most recent first) for the match detail timeline. */
+export async function listMatchEvents(
+  matchId: string,
+  opts: { scoringOnly?: boolean; limit?: number } = {},
+): Promise<MatchEventRow[]> {
+  const limit = Math.max(1, Math.min(500, opts.limit ?? 200));
+  const where: string[] = [`match_id = $1`];
+  if (opts.scoringOnly) where.push(`scoring_play = TRUE`);
+  const whereSql = `WHERE ${where.join(' AND ')}`;
+
+  interface DbRow {
+    id: string;
+    sequence_number: number | null;
+    period: number | null;
+    period_display: string | null;
+    clock: string | null;
+    type: string | null;
+    description: string | null;
+    scoring_play: boolean;
+    score_value: number | null;
+    home_score: number | null;
+    away_score: number | null;
+    team_id: string | null;
+    coordinate_x: string | null;
+    coordinate_y: string | null;
+  }
+
+  const result = await db().query<DbRow>(
+    `SELECT id::text,
+            sequence_number,
+            period,
+            period_display,
+            clock,
+            type,
+            description,
+            scoring_play,
+            score_value,
+            home_score,
+            away_score,
+            team_id,
+            coordinate_x::text,
+            coordinate_y::text
+       FROM match_events
+       ${whereSql}
+       ORDER BY sequence_number ASC NULLS LAST
+       LIMIT $2`,
+    [matchId, limit],
+  );
+
+  return result.rows.map((r) => ({
+    id: r.id,
+    sequenceNumber: r.sequence_number,
+    period: r.period,
+    periodDisplay: r.period_display,
+    clock: r.clock,
+    type: r.type,
+    description: r.description,
+    scoringPlay: r.scoring_play,
+    scoreValue: r.score_value,
+    homeScore: r.home_score,
+    awayScore: r.away_score,
+    teamId: r.team_id,
+    coordinateX: r.coordinate_x !== null ? Number(r.coordinate_x) : null,
+    coordinateY: r.coordinate_y !== null ? Number(r.coordinate_y) : null,
+  }));
 }

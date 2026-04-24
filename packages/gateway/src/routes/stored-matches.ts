@@ -44,6 +44,9 @@ interface MatchRowDb {
   away_score: string | null;
   odds_count: string;
   external_ids: Record<string, string>;
+  linescore: { home: number[]; away: number[] } | null;
+  attendance: number | null;
+  broadcast: string | null;
 }
 
 interface OddsRowDb {
@@ -68,7 +71,10 @@ const MATCH_SELECT = `
   hs.value->>'score' AS home_score,
   as_.value->>'score' AS away_score,
   (SELECT COUNT(*) FROM odds o WHERE o.match_id = m.bbs_id) AS odds_count,
-  m.external_ids`;
+  m.external_ids,
+  m.linescore,
+  m.attendance,
+  m.broadcast`;
 
 const MATCH_JOINS = `
   FROM matches m
@@ -99,6 +105,9 @@ function mapMatch(r: MatchRowDb): Record<string, unknown> {
       r.home_score !== null && r.away_score !== null
         ? { home: Number(r.home_score), away: Number(r.away_score) }
         : null,
+    linescore: r.linescore ?? null,
+    attendance: r.attendance,
+    broadcast: r.broadcast,
     odds_count: Number(r.odds_count),
     external_ids: r.external_ids ?? {},
   };

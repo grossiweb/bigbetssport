@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getMatchById, listLatestOdds } from '@/lib/matches';
+import { getMatchById, listLatestOdds, listMatchEvents } from '@/lib/matches';
 import { listLatestTeamStats, listPlayerStatsByMatch } from '@/lib/stats';
 import { Badge } from '@/components/Badge';
 
@@ -16,13 +16,15 @@ export default async function MatchDetailPage({
   let odds: Awaited<ReturnType<typeof listLatestOdds>> = [];
   let teamStats: Awaited<ReturnType<typeof listLatestTeamStats>> = [];
   let playerStats: Awaited<ReturnType<typeof listPlayerStatsByMatch>> = [];
+  let scoringPlays: Awaited<ReturnType<typeof listMatchEvents>> = [];
   try {
     match = await getMatchById(params.id);
     if (match) {
-      [odds, teamStats, playerStats] = await Promise.all([
+      [odds, teamStats, playerStats, scoringPlays] = await Promise.all([
         listLatestOdds(params.id),
         listLatestTeamStats(params.id),
         listPlayerStatsByMatch(params.id),
+        listMatchEvents(params.id, { scoringOnly: true, limit: 100 }),
       ]);
     }
   } catch {
@@ -105,6 +107,72 @@ export default async function MatchDetailPage({
           Source: <code className="rounded bg-navy-100 px-1 py-0.5">therundown</code>
         </div>
       </div>
+
+      {(match.attendance || match.broadcast) && (
+        <div className="card flex flex-wrap gap-x-6 gap-y-2 text-xs text-navy-500">
+          {match.attendance !== null && (
+            <div>
+              <span className="uppercase tracking-wide">Attendance:</span>{' '}
+              <span className="font-medium text-navy-800 tabular-nums">
+                {match.attendance.toLocaleString()}
+              </span>
+            </div>
+          )}
+          {match.broadcast && (
+            <div>
+              <span className="uppercase tracking-wide">Broadcast:</span>{' '}
+              <span className="font-medium text-navy-800">{match.broadcast}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {match.linescore && (
+        <div className="card">
+          <h2 className="mb-3 text-sm font-semibold text-navy-800">Linescore</h2>
+          <div className="overflow-x-auto">
+            <LinescoreTable
+              home={match.home}
+              away={match.away}
+              homeScores={match.linescore.home}
+              awayScores={match.linescore.away}
+              homeTotal={match.homeScore}
+              awayTotal={match.awayScore}
+            />
+          </div>
+        </div>
+      )}
+
+      {scoringPlays.length > 0 && (
+        <div className="card p-0 overflow-hidden">
+          <div className="flex items-center justify-between border-b border-navy-100 bg-navy-50 px-4 py-2">
+            <h2 className="text-sm font-semibold text-navy-800">Scoring plays</h2>
+            <div className="text-[11px] text-navy-500">
+              {scoringPlays.length} plays
+            </div>
+          </div>
+          <ul className="divide-y divide-navy-100">
+            {scoringPlays.map((p) => (
+              <li key={p.id} className="flex items-start gap-3 px-4 py-2">
+                <div className="shrink-0 pt-0.5 text-[10px] font-medium uppercase text-navy-500 w-16">
+                  {p.periodDisplay ?? (p.period ? `P${p.period}` : '—')}
+                  {p.clock && <div className="text-navy-400 normal-case">{p.clock}</div>}
+                </div>
+                <div className="min-w-0 flex-1 text-sm text-navy-800">
+                  {p.description ?? p.type ?? 'scoring play'}
+                </div>
+                <div className="shrink-0 text-right tabular-nums text-xs text-navy-600">
+                  {p.awayScore !== null && p.homeScore !== null
+                    ? `${p.awayScore}-${p.homeScore}`
+                    : p.scoreValue !== null
+                    ? `+${p.scoreValue}`
+                    : ''}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {teamStatsByField.size > 0 && (
         <div className="card">
@@ -237,6 +305,65 @@ function TeamPanel({
         {score ?? '–'}
       </div>
     </div>
+  );
+}
+
+function LinescoreTable({
+  home,
+  away,
+  homeScores,
+  awayScores,
+  homeTotal,
+  awayTotal,
+}: {
+  home: string;
+  away: string;
+  homeScores: readonly number[];
+  awayScores: readonly number[];
+  homeTotal: number | null;
+  awayTotal: number | null;
+}) {
+  const n = Math.max(homeScores.length, awayScores.length);
+  const periods: number[] = [];
+  for (let i = 1; i <= n; i += 1) periods.push(i);
+  return (
+    <table className="min-w-full text-sm">
+      <thead>
+        <tr className="text-xs uppercase tracking-wide text-navy-500">
+          <th className="py-2 pr-4 text-left">Team</th>
+          {periods.map((p) => (
+            <th key={p} className="py-2 px-2 text-right">
+              {p}
+            </th>
+          ))}
+          <th className="py-2 pl-4 text-right">T</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-navy-100">
+        <tr>
+          <td className="py-2 pr-4 font-medium text-navy-800">{away}</td>
+          {periods.map((p, i) => (
+            <td key={p} className="py-2 px-2 text-right tabular-nums">
+              {awayScores[i] ?? '—'}
+            </td>
+          ))}
+          <td className="py-2 pl-4 text-right font-semibold tabular-nums">
+            {awayTotal ?? '—'}
+          </td>
+        </tr>
+        <tr>
+          <td className="py-2 pr-4 font-medium text-navy-800">{home}</td>
+          {periods.map((p, i) => (
+            <td key={p} className="py-2 px-2 text-right tabular-nums">
+              {homeScores[i] ?? '—'}
+            </td>
+          ))}
+          <td className="py-2 pl-4 text-right font-semibold tabular-nums">
+            {homeTotal ?? '—'}
+          </td>
+        </tr>
+      </tbody>
+    </table>
   );
 }
 
