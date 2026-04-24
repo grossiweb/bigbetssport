@@ -20,6 +20,8 @@
     "ingest:standings:prod": "tsx scripts/ingest-standings-espn.ts",
     "ingest:players": "tsx --env-file=../../.env scripts/ingest-players-thesportsdb.ts",
     "ingest:players:prod": "tsx scripts/ingest-players-thesportsdb.ts",
+    "ingest:stats": "tsx --env-file=../../.env scripts/ingest-espn-stats.ts",
+    "ingest:stats:prod": "tsx scripts/ingest-espn-stats.ts",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint src"
   },

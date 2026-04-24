@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getMatchById, listLatestOdds } from '@/lib/matches';
+import { listLatestTeamStats, listPlayerStatsByMatch } from '@/lib/stats';
 import { Badge } from '@/components/Badge';
 
 export const dynamic = 'force-dynamic';
@@ -13,13 +14,52 @@ export default async function MatchDetailPage({
 }) {
   let match: Awaited<ReturnType<typeof getMatchById>> = null;
   let odds: Awaited<ReturnType<typeof listLatestOdds>> = [];
+  let teamStats: Awaited<ReturnType<typeof listLatestTeamStats>> = [];
+  let playerStats: Awaited<ReturnType<typeof listPlayerStatsByMatch>> = [];
   try {
     match = await getMatchById(params.id);
-    if (match) odds = await listLatestOdds(params.id);
+    if (match) {
+      [odds, teamStats, playerStats] = await Promise.all([
+        listLatestOdds(params.id),
+        listLatestTeamStats(params.id),
+        listPlayerStatsByMatch(params.id),
+      ]);
+    }
   } catch {
     // render with nulls below
   }
   if (!match) notFound();
+
+  // Group team stats by field so we can show home vs away side-by-side.
+  const teamStatsByField = new Map<
+    string,
+    { label: string; home: string | null; away: string | null }
+  >();
+  for (const s of teamStats.filter((x) => x.source === 'espn')) {
+    const row = teamStatsByField.get(s.field) ?? {
+      label: s.label ?? s.field,
+      home: null,
+      away: null,
+    };
+    if (s.teamId === match.id) {
+      // unused branch — teamId should never equal matchId
+    }
+    if (match && s.teamName === match.home) {
+      row.home = s.displayValue;
+    } else if (match && s.teamName === match.away) {
+      row.away = s.displayValue;
+    }
+    teamStatsByField.set(s.field, row);
+  }
+
+  // Group player stats by team for the box score.
+  const playersByTeam = new Map<string, typeof playerStats>();
+  for (const p of playerStats) {
+    const key = p.teamName ?? 'unassigned';
+    const list = playersByTeam.get(key) ?? [];
+    list.push(p);
+    playersByTeam.set(key, list);
+  }
 
   // Group odds by market
   const byMarket = new Map<string, typeof odds>();
@@ -65,6 +105,59 @@ export default async function MatchDetailPage({
           Source: <code className="rounded bg-navy-100 px-1 py-0.5">therundown</code>
         </div>
       </div>
+
+      {teamStatsByField.size > 0 && (
+        <div className="card">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-navy-800">Team stats</h2>
+            <code className="rounded bg-navy-100 px-1.5 py-0.5 text-[11px] text-navy-600">espn</code>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="text-xs uppercase tracking-wide text-navy-500">
+                  <th className="pb-2 text-right">{match.away}</th>
+                  <th className="pb-2 px-4 text-center">Stat</th>
+                  <th className="pb-2 text-left">{match.home}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-navy-100">
+                {Array.from(teamStatsByField.entries()).map(([field, row]) => (
+                  <tr key={field}>
+                    <td className="py-1.5 text-right tabular-nums font-medium text-navy-800">
+                      {row.away ?? '—'}
+                    </td>
+                    <td className="py-1.5 px-4 text-center text-xs text-navy-500">
+                      {row.label}
+                    </td>
+                    <td className="py-1.5 text-left tabular-nums font-medium text-navy-800">
+                      {row.home ?? '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {playersByTeam.size > 0 && (
+        <div className="space-y-4">
+          {Array.from(playersByTeam.entries()).map(([teamName, roster]) => (
+            <div key={teamName} className="card p-0 overflow-hidden">
+              <div className="flex items-center justify-between border-b border-navy-100 bg-navy-50 px-4 py-2">
+                <h2 className="text-sm font-semibold text-navy-800">
+                  {teamName} · boxscore
+                </h2>
+                <div className="text-[11px] text-navy-500">
+                  {roster.length} player{roster.length === 1 ? '' : 's'}
+                </div>
+              </div>
+              <BoxScoreTable roster={roster} />
+            </div>
+          ))}
+        </div>
+      )}
 
       {byMarket.size === 0 ? (
         <div className="card text-sm text-navy-500">
@@ -143,6 +236,75 @@ function TeamPanel({
       <div className="text-4xl font-bold tabular-nums text-navy-800">
         {score ?? '–'}
       </div>
+    </div>
+  );
+}
+
+function BoxScoreTable({
+  roster,
+}: {
+  roster: Awaited<ReturnType<typeof listPlayerStatsByMatch>>;
+}) {
+  // Collect all distinct stat fields across players (union) + use labels.
+  const fieldLabels = new Map<string, string>();
+  for (const p of roster) {
+    for (const [k, v] of Object.entries(p.stats)) {
+      if (!fieldLabels.has(k)) fieldLabels.set(k, v.label ?? k);
+    }
+  }
+  const fields = Array.from(fieldLabels.entries());
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full text-xs">
+        <thead>
+          <tr className="text-left uppercase tracking-wide text-navy-500">
+            <th className="px-3 py-2">Player</th>
+            {fields.map(([k, l]) => (
+              <th key={k} className="px-2 py-2 text-right">
+                {l}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-navy-100">
+          {roster.map((p) => (
+            <tr key={p.playerId}>
+              <td className="px-3 py-1.5">
+                <div className="flex items-center gap-2">
+                  {p.headshotUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={p.headshotUrl}
+                      alt=""
+                      className="h-6 w-6 rounded-full object-cover bg-navy-100"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="h-6 w-6 rounded-full bg-navy-100" />
+                  )}
+                  <div>
+                    <div className="font-medium text-navy-800">
+                      {p.playerName}
+                    </div>
+                    {(p.jerseyNumber || p.position) && (
+                      <div className="text-[10px] text-navy-500">
+                        {p.jerseyNumber && `#${p.jerseyNumber}`}
+                        {p.jerseyNumber && p.position && ' · '}
+                        {p.position}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </td>
+              {fields.map(([k]) => (
+                <td key={k} className="px-2 py-1.5 text-right tabular-nums text-navy-700">
+                  {p.stats[k]?.value ?? '—'}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
