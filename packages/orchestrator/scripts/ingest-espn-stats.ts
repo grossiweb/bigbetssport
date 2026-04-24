@@ -18,8 +18,10 @@
  *   DATABASE_URL  (required)
  */
 
-import { Client } from 'pg';
+import { Pool, type PoolClient } from 'pg';
 import { randomUUID } from 'node:crypto';
+
+type Client = PoolClient;
 
 const DELAY_MS = 500; // between ESPN summary calls (they're public-permissive)
 
@@ -485,6 +487,16 @@ async function insertPlays(
 ): Promise<number> {
   if (plays.length === 0) return 0;
 
+  // Basketball + soccer + football games have 400-600 plays each — that
+  // multiplies up Neon writes fast. Cap at scoring plays + "big" plays
+  // (score changes, period ends) to keep the table lean. Baseball plays
+  // are naturally fewer (~80 per game) so we keep them all.
+  const isHighVolume = /basketball|soccer|football|hockey/i.test(match.sport_type);
+  const filtered = isHighVolume
+    ? plays.filter((p) => p.scoringPlay === true)
+    : plays;
+  if (filtered.length === 0) return 0;
+
   // Cache our team ids keyed by ESPN team id (if we have them).
   const teamsResult = await c.query<{ bbs_id: string; espn_id: string }>(
     `SELECT bbs_id, external_ids->>'espn' AS espn_id
@@ -513,7 +525,7 @@ async function insertPlays(
   }
 
   let n = 0;
-  for (const p of plays) {
+  for (const p of filtered) {
     const teamId = p.team?.id ? teamByEspnId.get(p.team.id) ?? null : null;
     const firstAthleteEspn = p.participants?.[0]?.athlete?.id;
     const playerId = firstAthleteEspn ? await resolvePlayer(firstAthleteEspn) : null;
@@ -579,8 +591,38 @@ async function main(): Promise<void> {
   const limitArg = flag('--limit');
   const limit = limitArg ? Number.parseInt(limitArg, 10) : 0;
 
-  const client = new Client({ connectionString: url });
-  await client.connect();
+  // Use a Pool so a dropped connection (Neon auto-suspend, transient
+  // network) doesn't kill the run — pool.connect() re-establishes.
+  const pool = new Pool({
+    connectionString: url,
+    max: 1, // Keep sequential; avoid exhausting Neon free-tier compute.
+    idleTimeoutMillis: 30_000,
+    keepAlive: true,
+  });
+  pool.on('error', (err) => {
+    console.error(`[ingest-espn-stats] pool error: ${err.message}`);
+  });
+
+  async function withClient<T>(fn: (c: Client) => Promise<T>): Promise<T> {
+    // Retry up to 3 times on connection errors.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const client = await pool.connect();
+      try {
+        return await fn(client);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (attempt < 2 && /terminat|ECONNRESET|socket|timeout/i.test(msg)) {
+          console.error(`    (connection dropped, retrying attempt ${attempt + 2}/3)`);
+          await new Promise((r) => setTimeout(r, 2000));
+          continue;
+        }
+        throw err;
+      } finally {
+        client.release();
+      }
+    }
+    throw new Error('unreachable');
+  }
 
   try {
     // Fetch matches joined with teams + league for matching.
@@ -592,23 +634,25 @@ async function main(): Promise<void> {
     }
     const whereSql = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
 
-    const matches = await client.query<MatchRow>(
-      `SELECT
-         m.bbs_id, m.sport_type, l.name AS league_name,
-         m.kickoff_utc, m.home_id, m.away_id,
-         h.name AS home_name, a.name AS away_name
-       FROM matches m
-       LEFT JOIN leagues l ON l.bbs_id = m.league_id
-       LEFT JOIN teams   h ON h.bbs_id = m.home_id
-       LEFT JOIN teams   a ON a.bbs_id = m.away_id
-       ${whereSql}
-       ORDER BY
-         CASE WHEN m.status = 'finished' THEN 0
-              WHEN m.status = 'live'     THEN 1
-              ELSE 2 END,
-         m.kickoff_utc DESC
-       ${limit > 0 ? `LIMIT ${limit}` : ''}`,
-      params,
+    const matches = await withClient((c) =>
+      c.query<MatchRow>(
+        `SELECT
+           m.bbs_id, m.sport_type, l.name AS league_name,
+           m.kickoff_utc, m.home_id, m.away_id,
+           h.name AS home_name, a.name AS away_name
+         FROM matches m
+         LEFT JOIN leagues l ON l.bbs_id = m.league_id
+         LEFT JOIN teams   h ON h.bbs_id = m.home_id
+         LEFT JOIN teams   a ON a.bbs_id = m.away_id
+         ${whereSql}
+         ORDER BY
+           CASE WHEN m.status = 'finished' THEN 0
+                WHEN m.status = 'live'     THEN 1
+                ELSE 2 END,
+           m.kickoff_utc DESC
+         ${limit > 0 ? `LIMIT ${limit}` : ''}`,
+        params,
+      ),
     );
 
     console.log(`→ processing ${matches.rows.length} match(es)`);
@@ -635,7 +679,7 @@ async function main(): Promise<void> {
       const label = `${match.away_name} @ ${match.home_name} (${match.league_name})`;
       process.stdout.write(`  · ${label} … `);
       try {
-        const result = await processMatch(client, match, mapping, scoreboardCache);
+        const result = await withClient((c) => processMatch(c, match, mapping, scoreboardCache));
         if (
           result.teamStats === 0 &&
           result.playerStats === 0 &&
@@ -678,7 +722,7 @@ async function main(): Promise<void> {
         `\n  New players auto-created: ${totalPlayersCreated}`,
     );
   } finally {
-    await client.end();
+    await pool.end();
   }
 }
 
